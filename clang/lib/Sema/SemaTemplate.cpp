@@ -928,17 +928,20 @@ static TemplateArgumentLoc translateTemplateArgument(Sema &SemaRef,
   case ParsedTemplateArgument::Type: {
     TypeSourceInfo *DI;
     QualType T = SemaRef.GetTypeFromParser(Arg.getAsType(), &DI);
+    //T.dump("is type, type is");
     if (!DI)
       DI = SemaRef.Context.getTrivialTypeSourceInfo(T, Arg.getLocation());
     return TemplateArgumentLoc(TemplateArgument(T), DI);
   }
 
   case ParsedTemplateArgument::NonType: {
+    //std::cerr << "is nontype" << std::endl;
     Expr *E = static_cast<Expr *>(Arg.getAsExpr());
     return TemplateArgumentLoc(TemplateArgument(E), E);
   }
 
   case ParsedTemplateArgument::Template: {
+    //std::cerr << "is template" << std::endl;
     TemplateName Template = Arg.getAsTemplate().get();
     TemplateArgument TArg;
     if (Arg.getEllipsisLoc().isValid())
@@ -959,8 +962,10 @@ static TemplateArgumentLoc translateTemplateArgument(Sema &SemaRef,
 /// into template arguments used by semantic analysis.
 void Sema::translateTemplateArguments(const ASTTemplateArgsPtr &TemplateArgsIn,
                                       TemplateArgumentListInfo &TemplateArgs) {
- for (unsigned I = 0, Last = TemplateArgsIn.size(); I != Last; ++I)
-   TemplateArgs.addArgument(translateTemplateArgument(*this,
+  //std::cerr << "TemplateArgsIn" << std::endl;
+  for (unsigned I = 0, Last = TemplateArgsIn.size(); I != Last; ++I)
+    //std::cerr << "arg[" << I << "]" << std::endl, //TemplateArgsIn[I].dump(), std::cerr << std::endl,
+    TemplateArgs.addArgument(translateTemplateArgument(*this,
                                                       TemplateArgsIn[I]));
 }
 
@@ -979,9 +984,13 @@ static void maybeDiagnoseTemplateParameterShadow(Sema &SemaRef, Scope *S,
 /// argument instead of a type template argument.
 ParsedTemplateArgument Sema::ActOnTemplateTypeArgument(TypeResult ParsedType) {
   TypeSourceInfo *TInfo;
+  //ParsedType.get().get().dump("ActOnTemplateTypeArgument");
   QualType T = GetTypeFromParser(ParsedType.get(), &TInfo);
   if (T.isNull())
+  {
+    //std::cerr << "returning ParsedTemplateArgument" << std::endl;
     return ParsedTemplateArgument();
+  }
   assert(TInfo && "template argument with no location");
 
   // If we might have formed a deduced template specialization type, convert
@@ -4537,6 +4546,7 @@ DeclResult Sema::ActOnVarTemplateSpecialization(
       //
       //   -- The argument list of the specialization shall not be identical
       //      to the implicit argument list of the primary template.
+      //std::cerr << "diag on line " << __LINE__ << std::endl;
       Diag(TemplateNameLoc, diag::err_partial_spec_args_match_primary_template)
         << /*variable template*/ 1
         << /*is definition*/(SC != SC_Extern && !CurContext->isRecord())
@@ -8510,6 +8520,7 @@ DeclResult Sema::ActOnClassTemplateSpecialization(
     return true;
 
   if (TemplateParams && TemplateParams->size() > 0) {
+    //TemplateParams->getParam(0)->dump();
     isPartialSpecialization = true;
 
     if (TUK == TUK_Friend) {
@@ -8579,10 +8590,16 @@ DeclResult Sema::ActOnClassTemplateSpecialization(
       makeTemplateArgumentListInfo(*this, TemplateId);
 
   // Check for unexpanded parameter packs in any of the template arguments.
+  //std::cerr << "TemplateArgs " << std::endl;
   for (unsigned I = 0, N = TemplateArgs.size(); I != N; ++I)
+  {
+    //std::cerr << "arg[" << I << "]" << std::endl;
+    //TemplateArgs[I].getArgument().dump();
+    //std::cerr << std::endl;
     if (DiagnoseUnexpandedParameterPack(TemplateArgs[I],
                                         UPPC_PartialSpecialization))
       return true;
+  }
 
   // Check that the template argument list is well-formed for this
   // template.
@@ -8591,6 +8608,13 @@ DeclResult Sema::ActOnClassTemplateSpecialization(
                                 TemplateArgs, false, Converted,
                                 /*UpdateArgsWithConversions=*/true))
     return true;
+
+
+  //for (unsigned I = 0, N = TemplateArgs.size(); I != N; ++I)
+  //{
+  //  std::cout << "Converted[" << I << "]" << std::endl;
+  //  Converted[I].dump();
+  //}
 
   // Find the class template (partial) specialization declaration that
   // corresponds to these arguments.
@@ -8635,10 +8659,14 @@ DeclResult Sema::ActOnClassTemplateSpecialization(
   if (isPartialSpecialization) {
     // Build the canonical type that describes the converted template
     // arguments of the class template partial specialization.
+    //std::cerr << "Name: " << std::endl;
+    //Name.dump();
     TemplateName CanonTemplate = Context.getCanonicalTemplateName(Name);
     CanonType = Context.getTemplateSpecializationType(CanonTemplate,
                                                       Converted);
 
+    //CanonType.dump("CanonType");
+    //ClassTemplate->getInjectedClassNameSpecialization().dump("ClassTemplate->getInjectedClassNameSpecialization())");
     if (Context.hasSameType(CanonType,
                         ClassTemplate->getInjectedClassNameSpecialization()) &&
         (!Context.getLangOpts().CPlusPlus20 ||
@@ -8650,6 +8678,9 @@ DeclResult Sema::ActOnClassTemplateSpecialization(
       //
       // This rule has since been removed, because it's redundant given DR1495,
       // but we keep it because it produces better diagnostics and recovery.
+
+      // XXX this is where the error comes from
+      //std::cerr << "diag on line " << __LINE__ << std::endl;
       Diag(TemplateNameLoc, diag::err_partial_spec_args_match_primary_template)
         << /*class template*/0 << (TUK == TUK_Definition)
         << FixItHint::CreateRemoval(SourceRange(LAngleLoc, RAngleLoc));

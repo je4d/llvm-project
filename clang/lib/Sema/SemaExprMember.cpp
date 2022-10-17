@@ -1823,11 +1823,14 @@ Sema::BuildFieldReferenceExpr(Expr *BaseExpr, bool IsArrow,
 
   // Figure out the type of the member; see C99 6.5.2.3p3, C++ [expr.ref]
   QualType MemberType = Field->getType();
+  //MemberType.dump("Member type");
   if (const ReferenceType *Ref = MemberType->getAs<ReferenceType>()) {
     MemberType = Ref->getPointeeType();
+    //MemberType.dump("->pointee type");
     VK = VK_LValue;
 
     MemberType = Context.getConstPropagatedType(MemberType, BaseQuals.hasConst());
+    //MemberType.dump("->resolved propconst");
   } else {
     // GC attributes are never picked up by members.
     BaseQuals.removeObjCGCAttr();
@@ -1843,16 +1846,24 @@ Sema::BuildFieldReferenceExpr(Expr *BaseExpr, bool IsArrow,
 
     Qualifiers Combined = BaseQuals + MemberQuals;
     if (Combined != MemberQuals)
+    {
       MemberType = Context.getQualifiedType(MemberType, Combined);
+      //MemberType.dump("->combined qualifiers");
+    }
+
     MemberType = Context.getConstPropagatedType(MemberType);
+    //MemberType.dump("->resolved propconst");
 
     // Pick up NoDeref from the base in case we end up using AddrOf on the
     // result. E.g. the expression
     //     &someNoDerefPtr->pointerMember
     // should be a noderef pointer again.
     if (BaseType->hasAttr(attr::NoDeref))
+    {
       MemberType =
           Context.getAttributedType(attr::NoDeref, MemberType, MemberType);
+      //MemberType.dump("->noderef type");
+    }
   }
 
   auto *CurMethod = dyn_cast<CXXMethodDecl>(CurContext);

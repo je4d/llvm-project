@@ -785,6 +785,7 @@ bool DeclSpec::SetTypeSpecType(TST T, SourceLocation Loc,
   }
   TypeSpecType = T;
   ExprRep = Rep;
+  //ExprRep->dump("DeclSpec::SetTypeSpecType");
   TSTLoc = Loc;
   TSTNameLoc = Loc;
   TypeSpecOwned = false;

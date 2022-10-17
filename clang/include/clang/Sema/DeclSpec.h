@@ -22,6 +22,7 @@
 #ifndef LLVM_CLANG_SEMA_DECLSPEC_H
 #define LLVM_CLANG_SEMA_DECLSPEC_H
 
+#include <iostream>
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjCCommon.h"
 #include "clang/AST/NestedNameSpecifier.h"
@@ -742,6 +743,8 @@ public:
   void UpdateExprRep(Expr *Rep) {
     assert(isExprRep((TST) TypeSpecType));
     ExprRep = Rep;
+    //std::cerr << "DeclSpec::UpdateExprRep" << std::endl;
+    //ExprRep->dumpColor();
   }
 
   bool SetTypeQual(TQ T, SourceLocation Loc);

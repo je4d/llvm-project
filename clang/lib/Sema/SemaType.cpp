@@ -1606,6 +1606,10 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
     if (Result.isNull()) {
       declarator.setInvalidType(true);
     }
+    //else
+    //{
+    //  Result.dump("ConvertDeclSpecToType: TST_typename");
+    //}
 
     // TypeQuals handled by caller.
     break;
@@ -1646,8 +1650,11 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
     Result = S.BuildDecltypeType(E);
     if (Result.isNull()) {
       Result = Context.IntTy;
+      //Result.dump("decltype/null");
       declarator.setInvalidType(true);
     }
+    //else
+    //  Result.dump("decltype/nonnull");
     break;
   }
 #define TRANSFORM_TYPE_TRAIT_DEF(_, Trait) case DeclSpec::TST_##Trait:
@@ -1690,23 +1697,28 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
     Result = S.Context.getAutoType(QualType(), AutoKW,
                                    /*IsDependent*/ false, /*IsPack=*/false,
                                    TypeConstraintConcept, TemplateArgs);
+    //Result.dump("decltype_auto_type");
     break;
   }
 
   case DeclSpec::TST_auto_type:
     Result = Context.getAutoType(QualType(), AutoTypeKeyword::GNUAutoType, false);
+    //Result.dump("auto_type");
     break;
 
   case DeclSpec::TST_unknown_anytype:
     Result = Context.UnknownAnyTy;
+    //Result.dump("unknown any");
     break;
 
   case DeclSpec::TST_atomic:
     Result = S.GetTypeFromParser(DS.getRepAsType());
+    //Result.dump("atomic");
     assert(!Result.isNull() && "Didn't get a type for _Atomic?");
     Result = S.BuildAtomicType(Result, DS.getTypeSpecTypeLoc());
     if (Result.isNull()) {
       Result = Context.IntTy;
+      //Result.dump("atomic/null");
       declarator.setInvalidType(true);
     }
     break;
@@ -1784,6 +1796,7 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
     if (S.getLangOpts().Freestanding)
       S.Diag(DS.getTypeSpecComplexLoc(), diag::ext_freestanding_complex);
     Result = Context.getComplexType(Result);
+    //Result.dump("complex");
   } else if (DS.isTypeAltiVecVector()) {
     unsigned typeSize = static_cast<unsigned>(Context.getTypeSize(Result));
     assert(typeSize > 0 && "type size for vector must be greater than 0 bits");
@@ -1793,6 +1806,7 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
     else if (DS.isTypeAltiVecBool())
       VecKind = VectorType::AltiVecBool;
     Result = Context.getVectorType(Result, 128/typeSize, VecKind);
+    //Result.dump("Altivec");
   }
 
   // FIXME: Imaginary.
@@ -1903,13 +1917,20 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
       // produce a warning in this case.
     }
 
+    //Result.dump("building qualified from");
     QualType Qualified = S.BuildQualifiedType(Result, DeclLoc, TypeQuals, &DS);
 
     // If adding qualifiers fails, just use the unqualified type.
     if (Qualified.isNull())
+    {
+      //Result.dump("returning unqualified");
       declarator.setInvalidType(true);
+    }
     else
+    {
       Result = Qualified;
+      //Result.dump("returning qualified");
+    }
   }
 
   assert(!Result.isNull() && "This function should not return a null type");
@@ -1979,6 +2000,8 @@ QualType Sema::BuildQualifiedType(QualType T, SourceLocation Loc,
     }
   }
 
+  //T.dump("Sema::BuildQualifiedType returning Context.getQualifiedType from");
+  //std::cerr << " and " << Qs.getCVRQualifiers() << std::endl;
   return Context.getQualifiedType(T, Qs);
 }
 
@@ -3106,16 +3129,23 @@ QualType Sema::BuildBlockPointerType(QualType T,
 
 QualType Sema::GetTypeFromParser(ParsedType Ty, TypeSourceInfo **TInfo) {
   QualType QT = Ty.get();
+  //std::cerr << "GetTypeFromParser, Ty.get() is ";
   if (QT.isNull()) {
+
+    //std::cerr << "null" << std::endl;
     if (TInfo) *TInfo = nullptr;
     return QualType();
   }
 
   TypeSourceInfo *DI = nullptr;
   if (const LocInfoType *LIT = dyn_cast<LocInfoType>(QT)) {
+    //std::cerr << ".. modified to .. ";
     QT = LIT->getType();
     DI = LIT->getTypeSourceInfo();
   }
+
+  //QT.dump();
+  //std::cerr << std::endl;
 
   if (TInfo) *TInfo = DI;
   return QT;
@@ -3456,6 +3486,7 @@ static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
   // The TagDecl owned by the DeclSpec.
   TagDecl *OwnedTagDecl = nullptr;
 
+  //std::cerr << "declarator kind: " << ((int)D.getName().getKind()) << std::endl;
   switch (D.getName().getKind()) {
   case UnqualifiedIdKind::IK_ImplicitSelfParam:
   case UnqualifiedIdKind::IK_OperatorFunctionId:
@@ -3463,6 +3494,7 @@ static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
   case UnqualifiedIdKind::IK_LiteralOperatorId:
   case UnqualifiedIdKind::IK_TemplateId:
     T = ConvertDeclSpecToType(state);
+    //T.dump("ConvertDeclSpecToType ret");
 
     if (!D.isInvalidType() && D.getDeclSpec().isTypeSpecOwned()) {
       OwnedTagDecl = cast<TagDecl>(D.getDeclSpec().getRepAsDecl());
@@ -3477,6 +3509,7 @@ static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
     // Constructors and destructors don't have return types. Use
     // "void" instead.
     T = SemaRef.Context.VoidTy;
+    //T.dump("IK_DestructorName");
     processTypeAttrs(state, T, TAL_DeclSpec,
                      D.getMutableDeclSpec().getAttributes());
     break;
@@ -3485,13 +3518,16 @@ static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
     // Deduction guides have a trailing return type and no type in their
     // decl-specifier sequence. Use a placeholder return type for now.
     T = SemaRef.Context.DependentTy;
+    //T.dump("IK_DeductionGuideName");
     break;
 
   case UnqualifiedIdKind::IK_ConversionFunctionId:
     // The result type of a conversion function is the type that it
     // converts to.
+    //std::cerr << "from IK_ConversionFunctionId" << std::endl;
     T = SemaRef.GetTypeFromParser(D.getName().ConversionFunctionId,
                                   &ReturnTypeInfo);
+    //T.dump("IK_ConversionFunctionId");
     break;
   }
 
@@ -3564,7 +3600,10 @@ static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
       // return types when we pick up the trailing return type when processing
       // the function chunk.
       if (!DeducedIsTrailingReturnType)
+      {
         T = InventTemplateParameter(state, T, nullptr, Auto, *Info).first;
+        //T.dump("!DeducedIsTrailingReturnType");
+      }
       break;
     }
     case DeclaratorContext::Member: {
@@ -3695,6 +3734,8 @@ static QualType GetDeclSpecTypeForDeclarator(TypeProcessingState &state,
         SemaRef.Diag(TD->getLocation(), diag::note_template_decl_here);
 
       T = SemaRef.Context.IntTy;
+      //std::cerr << "from SemaRef.Context.IntTy" << std::endl;
+      //T.dump("SemaRef.Context.IntTy");
       D.setInvalidType(true);
     } else if (Auto && D.getContext() != DeclaratorContext::LambdaExpr) {
       // If there was a trailing return type, we already got
@@ -5919,6 +5960,7 @@ TypeSourceInfo *Sema::GetTypeForDeclarator(Declarator &D, Scope *S) {
 
   TypeSourceInfo *ReturnTypeInfo = nullptr;
   QualType T = GetDeclSpecTypeForDeclarator(state, ReturnTypeInfo);
+  //T.dump("GetDeclSpecTypeForDeclarator ret: ");
   if (D.isPrototypeContext() && getLangOpts().ObjCAutoRefCount)
     inferARCWriteback(state, T);
 
@@ -6546,6 +6588,7 @@ GetTypeSourceInfoForDeclarator(TypeProcessingState &State,
 
 /// Create a LocInfoType to hold the given QualType and TypeSourceInfo.
 ParsedType Sema::CreateParsedType(QualType T, TypeSourceInfo *TInfo) {
+  //T.dump("CreateParsedType");
   // FIXME: LocInfoTypes are "transient", only needed for passing to/from Parser
   // and Sema during declaration parsing. Try deallocating/caching them when
   // it's appropriate, instead of allocating them and keeping them around.
@@ -6570,8 +6613,13 @@ TypeResult Sema::ActOnTypeName(Scope *S, Declarator &D) {
   assert(D.getIdentifier() == nullptr &&
          "Type name should have no identifier!");
 
+  //D.dump("acting on type for declarator");
   TypeSourceInfo *TInfo = GetTypeForDeclarator(D, S);
   QualType T = TInfo->getType();
+  //if (T.isNull())
+  //  std::cerr << "acting on null type name?" << std::endl;
+  //else
+  //  T.dump("Acting on type");
   if (D.isInvalidType())
     return true;
 
@@ -9199,8 +9247,10 @@ QualType Sema::BuildTypeofExprType(Expr *E, TypeOfKind Kind) {
 /// that expression, according to the rules in C++11
 /// [dcl.type.simple]p4 and C++11 [expr.lambda.prim]p18.
 QualType Sema::getDecltypeForExpr(Expr *E) {
+  //std::cerr << "getDecltypeForExpr" << std::endl;
+  auto dump = [&](QualType val, const char* msg) { /*val.dump(msg);*/ return val; };
   if (E->isTypeDependent())
-    return Context.DependentTy;
+    return dump(Context.DependentTy, "is dependent");
 
   Expr *IDExpr = E;
   if (auto *ImplCastExpr = dyn_cast<ImplicitCastExpr>(E))
@@ -9217,7 +9267,7 @@ QualType Sema::getDecltypeForExpr(Expr *E) {
   // parameter object. This rule makes no difference before C++20 so we apply
   // it unconditionally.
   if (const auto *SNTTPE = dyn_cast<SubstNonTypeTemplateParmExpr>(IDExpr))
-    return SNTTPE->getParameterType(Context);
+    return dump(SNTTPE->getParameterType(Context), "SNTTPE");
 
   //     - if e is an unparenthesized id-expression or an unparenthesized class
   //       member access (5.2.5), decltype(e) is the type of the entity named
@@ -9228,19 +9278,19 @@ QualType Sema::getDecltypeForExpr(Expr *E) {
   if (const auto *DRE = dyn_cast<DeclRefExpr>(IDExpr)) {
     const ValueDecl *VD = DRE->getDecl();
     QualType T = VD->getType();
-    return isa<TemplateParamObjectDecl>(VD) ? T.getUnqualifiedType() : T;
+    return dump(isa<TemplateParamObjectDecl>(VD) ? T.getUnqualifiedType() : T, "DRE");
   }
   if (const auto *ME = dyn_cast<MemberExpr>(IDExpr)) {
     if (const auto *VD = ME->getMemberDecl())
       if (isa<FieldDecl>(VD) || isa<VarDecl>(VD))
-        return VD->getType();
+        return dump(VD->getType(), "VD");
   } else if (const auto *IR = dyn_cast<ObjCIvarRefExpr>(IDExpr)) {
-    return IR->getDecl()->getType();
+    return dump(IR->getDecl()->getType(), "IR");
   } else if (const auto *PR = dyn_cast<ObjCPropertyRefExpr>(IDExpr)) {
     if (PR->isExplicitProperty())
-      return PR->getExplicitProperty()->getType();
+      return dump(PR->getExplicitProperty()->getType(), "PR");
   } else if (const auto *PE = dyn_cast<PredefinedExpr>(IDExpr)) {
-    return PE->getType();
+    return dump(PE->getType(), "PE");
   }
 
   // C++11 [expr.lambda.prim]p18:
@@ -9255,12 +9305,15 @@ QualType Sema::getDecltypeForExpr(Expr *E) {
       if (auto *Var = dyn_cast<VarDecl>(DRE->getDecl())) {
         QualType T = getCapturedDeclRefType(Var, DRE->getLocation());
         if (!T.isNull())
+        {
+          //T.dump("returning Context.getLValueReferenceType of");
           return Context.getLValueReferenceType(T);
+        }
       }
     }
   }
 
-  return Context.getReferenceQualifiedType(E);
+  return dump(Context.getReferenceQualifiedType(E), "refqualifiedtype");
 }
 
 QualType Sema::BuildDecltypeType(Expr *E, bool AsUnevaluated) {
@@ -9274,7 +9327,9 @@ QualType Sema::BuildDecltypeType(Expr *E, bool AsUnevaluated) {
     // used to build SFINAE gadgets.
     Diag(E->getExprLoc(), diag::warn_side_effects_unevaluated_context);
   }
-  return Context.getDecltypeType(E, getDecltypeForExpr(E));
+  QualType exprType = getDecltypeForExpr(E);
+  //exprType.dump("Decltype expr type");
+  return Context.getDecltypeType(E, exprType);
 }
 
 static QualType GetEnumUnderlyingType(Sema &S, QualType BaseType,

@@ -1092,6 +1092,8 @@ SourceLocation Parser::ParseDecltypeSpecifier(DeclSpec &DS) {
           ParseExpression(), /*InitDecl=*/nullptr,
           /*RecoverUncorrectedTypos=*/false,
           [](Expr *E) { return E->hasPlaceholderType() ? ExprError() : E; });
+      //Result.get()->dump("set on line ~1091");
+
       if (Result.isInvalid()) {
         DS.SetTypeSpecError();
         if (SkipUntil(tok::r_paren, StopAtSemi | StopBeforeMatch)) {
@@ -1111,6 +1113,7 @@ SourceLocation Parser::ParseDecltypeSpecifier(DeclSpec &DS) {
       }
 
       Result = Actions.ActOnDecltypeExpression(Result.get());
+      //Result.get()->dump("set on line ~1114");
     }
 
     // Match the ')'

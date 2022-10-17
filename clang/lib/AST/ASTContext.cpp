@@ -5713,6 +5713,7 @@ QualType ASTContext::getReferenceQualifiedType(const Expr *E) const {
   // C++11 [dcl.type.simple]p4:
   //   [...]
   QualType T = E->getType();
+  //T.dump("getReferenceQualifiedType E->getType() is");
   switch (E->getValueKind()) {
   //     - otherwise, if e is an xvalue, decltype(e) is T&&, where T is the
   //       type of e;

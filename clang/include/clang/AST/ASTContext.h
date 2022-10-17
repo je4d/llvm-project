@@ -73,6 +73,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 namespace llvm {
 
@@ -2538,6 +2539,12 @@ public:
 
   /// Determine whether the given types \p T1 and \p T2 are equivalent.
   bool hasSameType(QualType T1, QualType T2) const {
+    //std::cerr << "T1:" << std::endl;
+    //T1.dump();
+    //std::cerr << "T2:" << std::endl;
+    //T2.dump();
+    //auto ret = getCanonicalType(T1) == getCanonicalType(T2);
+    //std::cerr << "returning: " << ret << std::endl;
     return getCanonicalType(T1) == getCanonicalType(T2);
   }
   bool hasSameType(const Type *T1, const Type *T2) const {

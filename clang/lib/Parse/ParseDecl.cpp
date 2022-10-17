@@ -44,6 +44,9 @@ using namespace clang;
 TypeResult Parser::ParseTypeName(SourceRange *Range, DeclaratorContext Context,
                                  AccessSpecifier AS, Decl **OwnedType,
                                  ParsedAttributes *Attrs) {
+  //std::cerr << "ParseTypeName" << std::endl;
+  //Range->dump(PP.getSourceManager()); crashes
+
   DeclSpecContext DSC = getDeclSpecContextFromDeclaratorContext(Context);
   if (DSC == DeclSpecContext::DSC_normal)
     DSC = DeclSpecContext::DSC_type_specifier;
