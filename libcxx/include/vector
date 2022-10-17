@@ -497,6 +497,7 @@ public:
     _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI const_iterator         begin()   const _NOEXCEPT;
     _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI iterator               end() _NOEXCEPT;
     _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI const_iterator         end()     const _NOEXCEPT;
+    _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI iterator               leak()    const _NOEXCEPT;
 
     _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI
     reverse_iterator       rbegin() _NOEXCEPT
@@ -1414,6 +1415,15 @@ typename vector<_Tp, _Allocator>::const_iterator
 vector<_Tp, _Allocator>::end() const _NOEXCEPT
 {
     return const_iterator(this, this->__end_);
+}
+
+template <class _Tp, class _Allocator>
+_LIBCPP_CONSTEXPR_SINCE_CXX20
+inline _LIBCPP_HIDE_FROM_ABI
+typename vector<_Tp, _Allocator>::iterator
+vector<_Tp, _Allocator>::leak() const _NOEXCEPT
+{
+    return iterator(this, this->__begin_);
 }
 
 template <class _Tp, class _Allocator>
