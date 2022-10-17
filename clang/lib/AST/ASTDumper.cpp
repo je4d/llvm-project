@@ -182,6 +182,11 @@ void QualType::dump(const char *msg) const {
 }
 
 LLVM_DUMP_METHOD void QualType::dump() const {
+  if (isNull())
+  {
+    llvm::errs() << "[null]\n";
+    return;
+  }
   ASTDumper Dumper(llvm::errs(), /*ShowColors=*/false);
   Dumper.Visit(*this);
 }
@@ -273,7 +278,9 @@ LLVM_DUMP_METHOD void DeclContext::dumpLookups(raw_ostream &OS,
 // Stmt method implementations
 //===----------------------------------------------------------------------===//
 
-LLVM_DUMP_METHOD void Stmt::dump() const {
+LLVM_DUMP_METHOD void Stmt::dump(const char* msg) const {
+  if (msg)
+    llvm::errs() << msg << ": ";
   ASTDumper P(llvm::errs(), /*ShowColors=*/false);
   P.Visit(this);
 }
