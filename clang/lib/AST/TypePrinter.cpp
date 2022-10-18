@@ -162,6 +162,11 @@ static void AppendTypeQualList(raw_ostream &OS, unsigned TypeQuals,
     OS << "const";
     appendSpace = true;
   }
+  if (TypeQuals & Qualifiers::Propconst) {
+    if (appendSpace) OS << ' ';
+    OS << "propconst";
+    appendSpace = true;
+  }
   if (TypeQuals & Qualifiers::Volatile) {
     if (appendSpace) OS << ' ';
     OS << "volatile";

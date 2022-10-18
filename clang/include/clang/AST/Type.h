@@ -66,7 +66,7 @@ class TemplateParameterList;
 class Type;
 
 enum {
-  TypeAlignmentInBits = 4,
+  TypeAlignmentInBits = 5,
   TypeAlignment = 1 << TypeAlignmentInBits
 };
 
@@ -147,10 +147,11 @@ using CanQualType = CanQual<Type>;
 class Qualifiers {
 public:
   enum TQ { // NOTE: These flags must be kept in sync with DeclSpec::TQ.
-    Const    = 0x1,
-    Restrict = 0x2,
-    Volatile = 0x4,
-    CVRMask = Const | Volatile | Restrict
+    Const     = 0x1,
+    Propconst = 0x2,
+    Volatile  = 0x4,
+    Restrict  = 0x8,
+    CVRMask = Const | Propconst | Volatile | Restrict
   };
 
   enum GC {
@@ -183,11 +184,11 @@ public:
 
   enum {
     /// The maximum supported address space number.
-    /// 23 bits should be enough for anyone.
-    MaxAddressSpace = 0x7fffffu,
+    /// 22 bits should be enough for anyone.
+    MaxAddressSpace = 0x3fffffu,
 
     /// The width of the "fast" qualifier mask.
-    FastWidth = 3,
+    FastWidth = 4,
 
     /// The fast qualifier mask.
     FastMask = (1 << FastWidth) - 1
@@ -613,15 +614,15 @@ private:
   //           |C R V|U|GCAttr|Lifetime|AddressSpace|
   uint32_t Mask = 0;
 
-  static const uint32_t UMask = 0x8;
-  static const uint32_t UShift = 3;
-  static const uint32_t GCAttrMask = 0x30;
-  static const uint32_t GCAttrShift = 4;
-  static const uint32_t LifetimeMask = 0x1C0;
-  static const uint32_t LifetimeShift = 6;
+  static const uint32_t UMask = 0x10;
+  static const uint32_t UShift = 4;
+  static const uint32_t GCAttrMask = 0x60;
+  static const uint32_t GCAttrShift = 5;
+  static const uint32_t LifetimeMask = 0x380;
+  static const uint32_t LifetimeShift = 7;
   static const uint32_t AddressSpaceMask =
       ~(CVRMask | UMask | GCAttrMask | LifetimeMask);
-  static const uint32_t AddressSpaceShift = 9;
+  static const uint32_t AddressSpaceShift = 10;
 };
 
 class QualifiersAndAtomic {
@@ -1610,7 +1611,11 @@ private:
       return CachedLocalOrUnnamed;
     }
   };
-  enum { NumTypeBits = 8 + llvm::BitWidth<TypeDependence> + 6 };
+  enum {
+    NumTypeBits = 8 + llvm::BitWidth<TypeDependence> + 6,
+    NumCVRQualBits = 4,
+    NumSizeModifierBits = 3
+  };
 
 protected:
   // These classes allow subclasses to somewhat cleanly pack bitfields
@@ -1623,18 +1628,18 @@ protected:
 
     /// CVR qualifiers from declarations like
     /// 'int X[static restrict 4]'. For function parameters only.
-    unsigned IndexTypeQuals : 3;
+    unsigned IndexTypeQuals : NumCVRQualBits;
 
     /// Storage class qualifiers from declarations like
     /// 'int X[static restrict 4]'. For function parameters only.
     /// Actually an ArrayType::ArraySizeModifier.
-    unsigned SizeModifier : 3;
+    unsigned SizeModifier : NumSizeModifierBits;
   };
 
   class ConstantArrayTypeBitfields {
     friend class ConstantArrayType;
 
-    unsigned : NumTypeBits + 3 + 3;
+    unsigned : NumTypeBits + NumCVRQualBits + NumSizeModifierBits;
 
     /// Whether we have a stored size expression.
     unsigned HasStoredSizeExpr : 1;

@@ -309,12 +309,13 @@ public:
   enum TQ {   // NOTE: These flags must be kept in sync with Qualifiers::TQ.
     TQ_unspecified = 0,
     TQ_const       = 1,
-    TQ_restrict    = 2,
+    TQ_propconst   = 2,
     TQ_volatile    = 4,
-    TQ_unaligned   = 8,
+    TQ_restrict    = 8,
+    TQ_unaligned   = 16,
     // This has no corresponding Qualifiers::TQ value, because it's not treated
     // as a qualifier in our type system.
-    TQ_atomic      = 16
+    TQ_atomic      = 32
   };
 
   /// ParsedSpecifiers - Flags to query which specifiers were applied.  This is
@@ -353,7 +354,7 @@ private:
   unsigned ConstrainedAuto : 1;
 
   // type-qualifiers
-  unsigned TypeQualifiers : 5;  // Bitwise OR of TQ.
+  unsigned TypeQualifiers : 7;  // Bitwise OR of TQ.
 
   // function-specifier
   unsigned FS_inline_specified : 1;
@@ -1215,7 +1216,7 @@ struct DeclaratorChunk {
 
   struct PointerTypeInfo {
     /// The type qualifiers: const/volatile/restrict/unaligned/atomic.
-    unsigned TypeQuals : 5;
+    unsigned TypeQuals : 6;
 
     /// The location of the const-qualifier, if any.
     SourceLocation ConstQualLoc;
@@ -1248,7 +1249,7 @@ struct DeclaratorChunk {
   struct ArrayTypeInfo {
     /// The type qualifiers for the array:
     /// const/volatile/restrict/__unaligned/_Atomic.
-    unsigned TypeQuals : 5;
+    unsigned TypeQuals : 6;
 
     /// True if this dimension included the 'static' keyword.
     unsigned hasStatic : 1;
@@ -1536,7 +1537,7 @@ struct DeclaratorChunk {
   struct BlockPointerTypeInfo {
     /// For now, sema will catch these as invalid.
     /// The type qualifiers: const/volatile/restrict/__unaligned/_Atomic.
-    unsigned TypeQuals : 5;
+    unsigned TypeQuals : 6;
 
     void destroy() {
     }
@@ -1544,7 +1545,7 @@ struct DeclaratorChunk {
 
   struct MemberPointerTypeInfo {
     /// The type qualifiers: const/volatile/restrict/__unaligned/_Atomic.
-    unsigned TypeQuals : 5;
+    unsigned TypeQuals : 6;
     /// Location of the '*' token.
     SourceLocation StarLoc;
     // CXXScopeSpec has a constructor, so it can't be a direct member.

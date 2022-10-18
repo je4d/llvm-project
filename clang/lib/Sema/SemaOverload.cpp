@@ -8096,6 +8096,8 @@ BuiltinCandidateTypeSet::AddPointerWithMoreQualifiedTypeVariants(QualType Ty,
   // Iterate through all strict supersets of BaseCVR.
   for (unsigned CVR = BaseCVR+1; CVR <= Qualifiers::CVRMask; ++CVR) {
     if ((CVR | BaseCVR) != CVR) continue;
+    // Skip over propconst, it does not get involved in overload resolution
+    if (CVR & Qualifiers::Propconst) continue;
     // Skip over volatile if no volatile found anywhere in the types.
     if ((CVR & Qualifiers::Volatile) && !hasVolatile) continue;
 

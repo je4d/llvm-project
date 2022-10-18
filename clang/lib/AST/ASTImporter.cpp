@@ -1474,10 +1474,6 @@ ExpectedType ASTNodeImporter::VisitInjectedClassNameType(
   // FIXME: ASTContext::getInjectedClassNameType is not suitable for AST reading
   // See comments in InjectedClassNameType definition for details
   // return Importer.getToContext().getInjectedClassNameType(D, InjType);
-  enum {
-    TypeAlignmentInBits = 4,
-    TypeAlignment = 1 << TypeAlignmentInBits
-  };
 
   return QualType(new (Importer.getToContext(), TypeAlignment)
                   InjectedClassNameType(*ToDeclOrErr, *ToInjTypeOrErr), 0);
