@@ -110,8 +110,8 @@ namespace {
     KEYSYCL       = 0x800000,
     KEYCUDA       = 0x1000000,
     KEYHLSL       = 0x2000000,
-    KEYMAX        = KEYHLSL, // The maximum key
-    KEYALLCXX = KEYCXX | KEYCXX11 | KEYCXX20,
+    KEYCXX2B      = 0x4000000, KEYMAX        = KEYCXX2B, // The maximum key
+    KEYALLCXX = KEYCXX | KEYCXX11 | KEYCXX20 | KEYCXX2B,
     KEYALL = (KEYMAX | (KEYMAX-1)) & ~KEYNOMS18 &
              ~KEYNOOPENCL // KEYNOMS18 and KEYNOOPENCL are used to exclude.
   };
@@ -157,6 +157,10 @@ static KeywordStatus getKeywordStatusHelper(const LangOptions &LangOpts,
     return LangOpts.CPlusPlus ? KS_Future : KS_Unknown;
   case KEYCXX20:
     if (LangOpts.CPlusPlus20)
+      return KS_Enabled;
+    return LangOpts.CPlusPlus ? KS_Future : KS_Unknown;
+  case KEYCXX2B:
+    if (LangOpts.CPlusPlus2b)
       return KS_Enabled;
     return LangOpts.CPlusPlus ? KS_Future : KS_Unknown;
   case KEYGNU:
@@ -870,6 +874,8 @@ IdentifierTable::getFutureCompatDiagKind(const IdentifierInfo &II,
     if (((Flags & KEYCXX20) == KEYCXX20) ||
         ((Flags & CHAR8SUPPORT) == CHAR8SUPPORT))
       return diag::warn_cxx20_keyword;
+    if ((Flags & KEYCXX2B) == KEYCXX2B)
+      return diag::warn_cxx2b_keyword;
   } else {
     if ((Flags & KEYC99) == KEYC99)
       return diag::warn_c99_keyword;

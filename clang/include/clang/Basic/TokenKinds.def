@@ -28,6 +28,9 @@
 #ifndef CXX20_KEYWORD
 #define CXX20_KEYWORD(X,Y) KEYWORD(X,KEYCXX20|(Y))
 #endif
+#ifndef CXX2B_KEYWORD
+#define CXX2B_KEYWORD(X,Y) KEYWORD(X,KEYCXX2B|(Y))
+#endif
 #ifndef C99_KEYWORD
 #define C99_KEYWORD(X,Y) KEYWORD(X,KEYC99|(Y))
 #endif

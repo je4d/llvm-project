@@ -80,6 +80,8 @@ def warn_cxx11_keyword : Warning<"'%0' is a keyword in C++11">,
   InGroup<CXX11Compat>, DefaultIgnore;
 def warn_cxx20_keyword : Warning<"'%0' is a keyword in C++20">,
   InGroup<CXX20Compat>, DefaultIgnore;
+def warn_cxx2b_keyword : Warning<"'%0' is a keyword in C++2b">,
+  InGroup<CXXPre2bCompat>, DefaultIgnore;
 def warn_c99_keyword : Warning<"'%0' is a keyword in C99">,
   InGroup<C99Compat>, DefaultIgnore;
 def warn_c2x_keyword : Warning<"'%0' is a keyword in C2x">,
