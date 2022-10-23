@@ -273,6 +273,16 @@ public:
     return Qs;
   }
 
+  bool hasPropconst() const { return Mask & Propconst; }
+  bool hasOnlyPropconst() const { return Mask == Propconst; }
+  void removePropconst() { Mask &= ~Propconst; }
+  void addPropconst() { Mask |= Propconst; }
+  Qualifiers withPropconst() const {
+    Qualifiers Qs = *this;
+    Qs.addPropconst();
+    return Qs;
+  }
+
   bool hasVolatile() const { return Mask & Volatile; }
   bool hasOnlyVolatile() const { return Mask == Volatile; }
   void removeVolatile() { Mask &= ~Volatile; }
@@ -817,8 +827,18 @@ public:
     return (getLocalFastQualifiers() & Qualifiers::Const);
   }
 
+  /// Determine whether this particular QualType instance has the
+  /// "propconst" qualifier set, without looking through typedefs that may have
+  /// added "propconst" at a different level.
+  bool isLocalPropconstQualified() const {
+    return (getLocalFastQualifiers() & Qualifiers::Propconst);
+  }
+
   /// Determine whether this type is const-qualified.
   bool isConstQualified() const;
+
+  /// Determine whether this type is propconst-qualified.
+  bool isPropconstQualified() const;
 
   enum class NonConstantStorageReason {
     MutableField,
@@ -7227,6 +7247,11 @@ inline bool QualType::isCanonicalAsParam() const {
 inline bool QualType::isConstQualified() const {
   return isLocalConstQualified() ||
          getCommonPtr()->CanonicalType.isLocalConstQualified();
+}
+
+inline bool QualType::isPropconstQualified() const {
+  return isLocalPropconstQualified() ||
+         getCommonPtr()->CanonicalType.isLocalPropconstQualified();
 }
 
 inline bool QualType::isRestrictQualified() const {

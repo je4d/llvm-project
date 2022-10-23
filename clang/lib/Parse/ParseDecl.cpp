@@ -976,6 +976,7 @@ SourceLocation Parser::SkipExtendedMicrosoftTypeAttributes() {
   while (true) {
     switch (Tok.getKind()) {
     case tok::kw_const:
+    case tok::kw_propconst:
     case tok::kw_volatile:
     case tok::kw___fastcall:
     case tok::kw___stdcall:
@@ -4567,6 +4568,10 @@ void Parser::ParseDeclarationSpecifiers(
       isInvalid = DS.SetTypeQual(DeclSpec::TQ_const, Loc, PrevSpec, DiagID,
                                  getLangOpts());
       break;
+    case tok::kw_propconst:
+      isInvalid = DS.SetTypeQual(DeclSpec::TQ_propconst, Loc, PrevSpec, DiagID,
+                                 getLangOpts());
+      break;
     case tok::kw_volatile:
       isInvalid = DS.SetTypeQual(DeclSpec::TQ_volatile, Loc, PrevSpec, DiagID,
                                  getLangOpts());
@@ -5704,6 +5709,7 @@ bool Parser::isTypeSpecifierQualifier() {
 
     // type-qualifier
   case tok::kw_const:
+  case tok::kw_propconst:
   case tok::kw_volatile:
   case tok::kw_restrict:
   case tok::kw__Sat:
@@ -5924,6 +5930,7 @@ bool Parser::isDeclarationSpecifier(
 
     // type-qualifier
   case tok::kw_const:
+  case tok::kw_propconst:
   case tok::kw_volatile:
   case tok::kw_restrict:
   case tok::kw__Sat:
@@ -6239,6 +6246,10 @@ void Parser::ParseTypeQualifierListOpt(
 
     case tok::kw_const:
       isInvalid = DS.SetTypeQual(DeclSpec::TQ_const   , Loc, PrevSpec, DiagID,
+                                 getLangOpts());
+      break;
+    case tok::kw_propconst:
+      isInvalid = DS.SetTypeQual(DeclSpec::TQ_propconst, Loc, PrevSpec, DiagID,
                                  getLangOpts());
       break;
     case tok::kw_volatile:
