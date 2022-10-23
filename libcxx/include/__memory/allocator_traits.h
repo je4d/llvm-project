@@ -15,6 +15,7 @@
 #include <__memory/pointer_traits.h>
 #include <__type_traits/enable_if.h>
 #include <__type_traits/is_constructible.h>
+#include <__type_traits/is_convertible.h>
 #include <__type_traits/is_empty.h>
 #include <__type_traits/make_unsigned.h>
 #include <__type_traits/remove_reference.h>
@@ -67,6 +68,38 @@ struct __const_pointer<_Tp, _Ptr, _Alloc, false> {
   using type _LIBCPP_NODEBUG = typename pointer_traits<_Ptr>::template rebind<const _Tp>;
 #endif
 };
+
+#if _LIBCPP_STD_VER >= 26
+// __propconst_pointer
+_LIBCPP_ALLOCATOR_TRAITS_HAS_XXX(__has_propconst_pointer, propconst_pointer);
+
+// __propconst_support_level
+// 2 = _Alloc defines propconst_pointer
+// 1 = a usable propconst_pointer can be formed via pointer_traits::rebind
+// 0 = canot create a propconst_pointer - define it as pointer instead
+template <typename _Tp, typename _Ptr, typename _Alloc>
+consteval bool __propconst_support_level() {
+  if constexpr (__has_propconst_pointer<_Alloc>::value)
+    return 2;
+  else if constexpr (is_convertible<typename pointer_traits<_Ptr>::template rebind<propconst _Tp>, _Ptr>::value)
+    return 1;
+  return 0;
+}
+
+template <class _Tp, class _Ptr, class _Alloc,
+          bool = __propconst_support_level<_Tp, _Ptr, _Alloc>()>
+struct __propconst_pointer {
+    using type _LIBCPP_NODEBUG = typename _Alloc::propconst_pointer;
+};
+template <class _Tp, class _Ptr, class _Alloc>
+struct __propconst_pointer<_Tp, _Ptr, _Alloc, 1> {
+    using type _LIBCPP_NODEBUG = typename pointer_traits<_Ptr>::template rebind<propconst _Tp>;
+};
+template <class _Tp, class _Ptr, class _Alloc>
+struct __propconst_pointer<_Tp, _Ptr, _Alloc, 0> {
+    using type _LIBCPP_NODEBUG = _Ptr;
+};
+#endif
 
 // __void_pointer
 _LIBCPP_ALLOCATOR_TRAITS_HAS_XXX(__has_void_pointer, void_pointer);
@@ -248,6 +281,9 @@ struct _LIBCPP_TEMPLATE_VIS allocator_traits {
   using value_type         = typename allocator_type::value_type;
   using pointer            = typename __pointer<value_type, allocator_type>::type;
   using const_pointer      = typename __const_pointer<value_type, pointer, allocator_type>::type;
+#if _LIBCPP_STD_VER >= 26
+  using propconst_pointer  = typename __propconst_pointer<value_type, pointer, allocator_type>::type;
+#endif
   using void_pointer       = typename __void_pointer<pointer, allocator_type>::type;
   using const_void_pointer = typename __const_void_pointer<pointer, allocator_type>::type;
   using difference_type    = typename __alloc_traits_difference_type<allocator_type, pointer>::type;

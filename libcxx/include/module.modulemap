@@ -1832,6 +1832,7 @@ module std_private_tuple_tuple_size             [system] { header "__tuple/tuple
 module std_private_tuple_tuple_types            [system] { header "__tuple/tuple_types.h" }
 
 module std_private_type_traits_add_const                                 [system] { header "__type_traits/add_const.h" }
+module std_private_type_traits_add_propconst                             [system] { header "__type_traits/add_propconst.h" }
 module std_private_type_traits_add_cv                                    [system] { header "__type_traits/add_cv.h" }
 module std_private_type_traits_add_lvalue_reference                      [system] {
   header "__type_traits/add_lvalue_reference.h"
