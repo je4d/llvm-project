@@ -14735,7 +14735,7 @@ ExprResult Sema::BuildCallToMemberFunction(Scope *S, Expr *MemExprE,
     MemExpr = cast<MemberExpr>(MemExprE->IgnoreParens());
   }
 
-  QualType ResultType = Method->getReturnType();
+  QualType ResultType = Context.getConstPropagatedType(Method->getReturnType());
   ExprValueKind VK = Expr::getValueKindForType(ResultType);
   ResultType = ResultType.getNonLValueExprType(Context);
 

@@ -1857,8 +1857,7 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
     //   latter case, the cv-qualifiers are ignored.
     if (Result->isFunctionType()) {
       diagnoseAndRemoveTypeQualifiers(
-          S, DS, TypeQuals, Result, DeclSpec::TQ_const | DeclSpec::TQ_volatile,
-          S.getLangOpts().CPlusPlus
+          S, DS, TypeQuals, Result, DeclSpec::TQ_const | DeclSpec::TQ_propconst | DeclSpec::TQ_volatile, S.getLangOpts().CPlusPlus
               ? diag::warn_typecheck_function_qualifiers_ignored
               : diag::warn_typecheck_function_qualifiers_unspecified);
       // No diagnostic for 'restrict' or '_Atomic' applied to a
@@ -1876,7 +1875,7 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
     if (TypeQuals && Result->isReferenceType()) {
       diagnoseAndRemoveTypeQualifiers(
           S, DS, TypeQuals, Result,
-          DeclSpec::TQ_const | DeclSpec::TQ_volatile | DeclSpec::TQ_atomic,
+          DeclSpec::TQ_const | DeclSpec::TQ_propconst | DeclSpec::TQ_volatile | DeclSpec::TQ_atomic,
           diag::warn_typecheck_reference_qualifiers);
     }
 
@@ -1888,6 +1887,11 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
       if (TypeQuals & DeclSpec::TQ_const && Result.isConstQualified()) {
         S.Diag(DS.getConstSpecLoc(), diag::ext_duplicate_declspec)
           << "const";
+      }
+
+      if (TypeQuals & DeclSpec::TQ_propconst && Result.isPropconstQualified()) {
+        S.Diag(DS.getPropconstSpecLoc(), diag::ext_duplicate_declspec)
+          << "propconst";
       }
 
       if (TypeQuals & DeclSpec::TQ_volatile && Result.isVolatileQualified()) {
@@ -1935,6 +1939,7 @@ QualType Sema::BuildQualifiedType(QualType T, SourceLocation Loc,
   // Ignore any attempt to form a cv-qualified reference.
   if (T->isReferenceType()) {
     Qs.removeConst();
+    Qs.removePropconst();
     Qs.removeVolatile();
   }
 

@@ -125,6 +125,8 @@ TEST_F(QualifierFixerTest, RotateTokens) {
   // TODO add test
   EXPECT_EQ(LeftRightQualifierAlignmentFixer::getTokenFromQualifier("const"),
             tok::kw_const);
+  EXPECT_EQ(LeftRightQualifierAlignmentFixer::getTokenFromQualifier("propconst"),
+            tok::kw_propconst);
   EXPECT_EQ(LeftRightQualifierAlignmentFixer::getTokenFromQualifier("volatile"),
             tok::kw_volatile);
   EXPECT_EQ(LeftRightQualifierAlignmentFixer::getTokenFromQualifier("inline"),

@@ -593,7 +593,7 @@ public:
   }
 
   bool canBePointerOrReferenceQualifier() const {
-    return isOneOf(tok::kw_const, tok::kw_restrict, tok::kw_volatile,
+    return isOneOf(tok::kw_const, tok::kw_propconst, tok::kw_restrict, tok::kw_volatile,
                    tok::kw___attribute, tok::kw__Nonnull, tok::kw__Nullable,
                    tok::kw__Null_unspecified, tok::kw___ptr32, tok::kw___ptr64,
                    TT_AttributeMacro);

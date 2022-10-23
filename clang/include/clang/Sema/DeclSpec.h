@@ -397,8 +397,8 @@ private:
   /// TSTNameLoc provides source range info for tag types.
   SourceLocation TSTNameLoc;
   SourceRange TypeofParensRange;
-  SourceLocation TQ_constLoc, TQ_restrictLoc, TQ_volatileLoc, TQ_atomicLoc,
-      TQ_unalignedLoc;
+  SourceLocation TQ_constLoc, TQ_propconstLoc, TQ_restrictLoc, TQ_volatileLoc,
+      TQ_atomicLoc, TQ_unalignedLoc;
   SourceLocation FS_inlineLoc, FS_virtualLoc, FS_explicitLoc, FS_noreturnLoc;
   SourceLocation FS_explicitCloseParenLoc;
   SourceLocation FS_forceinlineLoc;
@@ -567,6 +567,7 @@ public:
   /// getTypeQualifiers - Return a set of TQs.
   unsigned getTypeQualifiers() const { return TypeQualifiers; }
   SourceLocation getConstSpecLoc() const { return TQ_constLoc; }
+  SourceLocation getPropconstSpecLoc() const { return TQ_propconstLoc; }
   SourceLocation getRestrictSpecLoc() const { return TQ_restrictLoc; }
   SourceLocation getVolatileSpecLoc() const { return TQ_volatileLoc; }
   SourceLocation getAtomicSpecLoc() const { return TQ_atomicLoc; }
@@ -577,6 +578,7 @@ public:
   void ClearTypeQualifiers() {
     TypeQualifiers = 0;
     TQ_constLoc = SourceLocation();
+    TQ_propconstLoc = SourceLocation();
     TQ_restrictLoc = SourceLocation();
     TQ_volatileLoc = SourceLocation();
     TQ_atomicLoc = SourceLocation();

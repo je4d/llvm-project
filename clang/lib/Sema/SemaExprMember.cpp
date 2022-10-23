@@ -1816,17 +1816,19 @@ Sema::BuildFieldReferenceExpr(Expr *BaseExpr, bool IsArrow,
   if (VK != VK_PRValue && Field->isBitField())
     OK = OK_BitField;
 
+  QualType BaseType = BaseExpr->getType();
+  if (IsArrow) BaseType = BaseType->castAs<PointerType>()->getPointeeType();
+
+  Qualifiers BaseQuals = BaseType.getQualifiers();
+
   // Figure out the type of the member; see C99 6.5.2.3p3, C++ [expr.ref]
   QualType MemberType = Field->getType();
   if (const ReferenceType *Ref = MemberType->getAs<ReferenceType>()) {
     MemberType = Ref->getPointeeType();
     VK = VK_LValue;
+
+    MemberType = Context.getConstPropagatedType(MemberType, BaseQuals.hasConst());
   } else {
-    QualType BaseType = BaseExpr->getType();
-    if (IsArrow) BaseType = BaseType->castAs<PointerType>()->getPointeeType();
-
-    Qualifiers BaseQuals = BaseType.getQualifiers();
-
     // GC attributes are never picked up by members.
     BaseQuals.removeObjCGCAttr();
 
@@ -1842,6 +1844,7 @@ Sema::BuildFieldReferenceExpr(Expr *BaseExpr, bool IsArrow,
     Qualifiers Combined = BaseQuals + MemberQuals;
     if (Combined != MemberQuals)
       MemberType = Context.getQualifiedType(MemberType, Combined);
+    MemberType = Context.getConstPropagatedType(MemberType);
 
     // Pick up NoDeref from the base in case we end up using AddrOf on the
     // result. E.g. the expression

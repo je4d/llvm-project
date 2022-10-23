@@ -408,6 +408,7 @@ tok::TokenKind LeftRightQualifierAlignmentFixer::getTokenFromQualifier(
   return llvm::StringSwitch<tok::TokenKind>(Qualifier)
       .Case("type", tok::kw_typeof)
       .Case("const", tok::kw_const)
+      .Case("propconst", tok::kw_propconst)
       .Case("volatile", tok::kw_volatile)
       .Case("static", tok::kw_static)
       .Case("inline", tok::kw_inline)

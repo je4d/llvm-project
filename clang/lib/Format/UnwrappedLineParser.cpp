@@ -3358,6 +3358,7 @@ bool clang::format::UnwrappedLineParser::parseRequires() {
   for (; NextTokenOffset < 50; PeekNext()) {
     switch (NextToken->Tok.getKind()) {
     case tok::kw_volatile:
+    case tok::kw_propconst:
     case tok::kw_const:
     case tok::comma:
       parseRequiresExpression(RequiresToken);

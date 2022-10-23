@@ -474,7 +474,7 @@ DeclRefExpr::DeclRefExpr(const ASTContext &Ctx, ValueDecl *D,
                          ExprValueKind VK, SourceLocation L,
                          const DeclarationNameLoc &LocInfo,
                          NonOdrUseReason NOUR)
-    : Expr(DeclRefExprClass, T, VK, OK_Ordinary), D(D), DNLoc(LocInfo) {
+    : Expr(DeclRefExprClass, Ctx.getConstPropagatedType(T), VK, OK_Ordinary), D(D), DNLoc(LocInfo) {
   DeclRefExprBits.HasQualifier = false;
   DeclRefExprBits.HasTemplateKWAndArgsInfo = false;
   DeclRefExprBits.HasFoundDecl = false;
@@ -493,7 +493,7 @@ DeclRefExpr::DeclRefExpr(const ASTContext &Ctx,
                          const DeclarationNameInfo &NameInfo, NamedDecl *FoundD,
                          const TemplateArgumentListInfo *TemplateArgs,
                          QualType T, ExprValueKind VK, NonOdrUseReason NOUR)
-    : Expr(DeclRefExprClass, T, VK, OK_Ordinary), D(D),
+    : Expr(DeclRefExprClass, Ctx.getConstPropagatedType(T), VK, OK_Ordinary), D(D),
       DNLoc(NameInfo.getInfo()) {
   DeclRefExprBits.Loc = NameInfo.getLoc();
   DeclRefExprBits.HasQualifier = QualifierLoc ? 1 : 0;

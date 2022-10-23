@@ -3128,6 +3128,58 @@ QualType ASTContext::removePtrSizeAddrSpace(QualType T) const {
   return T;
 }
 
+QualType ASTContext::getConstPropagatedType(QualType T, bool ConstContext) const
+{
+  Qualifiers NewQuals = T.getQualifiers();
+  if (NewQuals.hasPropconst())
+  {
+    NewQuals.removePropconst();
+    if (ConstContext)
+      NewQuals.addConst();
+  }
+
+  if (const PointerType* Ptr = T->getAs<PointerType>()) {
+    const QualType PointeeType = Ptr->getPointeeType();
+    const QualType CpPointeeType = getConstPropagatedType(PointeeType, NewQuals.hasConst());
+    if (CpPointeeType != PointeeType)
+      T = getPointerType(CpPointeeType);
+  } else if (const LValueReferenceType* Ref = T->getAs<LValueReferenceType>()) {
+    const QualType RefereeType = Ref->getPointeeType();
+    const QualType CpRefereeType = getConstPropagatedType(RefereeType, NewQuals.hasConst());
+    if (CpRefereeType != RefereeType)
+      return getLValueReferenceType(CpRefereeType);
+    return T;
+  } else if (const RValueReferenceType* Ref = T->getAs<RValueReferenceType>()) {
+    const QualType RefereeType = Ref->getPointeeType();
+    const QualType CpRefereeType = getConstPropagatedType(RefereeType, NewQuals.hasConst());
+    if (CpRefereeType != RefereeType)
+      return getRValueReferenceType(CpRefereeType);
+    return T;
+  } else if (const FunctionProtoType* FPT = T->getAs<FunctionProtoType>()) {
+    bool ParamsChanged = false;
+    const auto& ParamTypes = FPT->param_types();
+    SmallVector<QualType, 16> CpParamTypes(ParamTypes.size());
+    for (unsigned i = 0, n = ParamTypes.size(); i != n; ++i)
+    {
+      CpParamTypes[i] = getConstPropagatedType(ParamTypes[i]);
+      if (CpParamTypes[i] != ParamTypes[i])
+        ParamsChanged = true;
+    }
+    const QualType ReturnType = FPT->getReturnType();
+    const QualType CpReturnType = getConstPropagatedType(ReturnType);
+    if (CpReturnType != ReturnType or ParamsChanged)
+      return getFunctionType(
+          CpReturnType,
+          CpParamTypes,
+          FPT->getExtProtoInfo());
+    return T;
+  }
+
+  if (NewQuals != T.getQualifiers())
+    return getQualifiedType(T.getUnqualifiedType(), NewQuals);
+  return T;
+}
+
 const FunctionType *ASTContext::adjustFunctionType(const FunctionType *T,
                                                    FunctionType::ExtInfo Info) {
   if (T->getExtInfo() == Info)

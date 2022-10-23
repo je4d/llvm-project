@@ -1425,6 +1425,7 @@ bool Parser::isValidAfterTypeSpecifier(bool CouldBeBitfield) {
     return getLangOpts().MicrosoftExt;
   // Type qualifiers
   case tok::kw_const:       // struct foo {...} const     x;
+  case tok::kw_propconst:   // struct foo {...} propconst x;
   case tok::kw_volatile:    // struct foo {...} volatile  x;
   case tok::kw_restrict:    // struct foo {...} restrict  x;
   case tok::kw__Atomic:     // struct foo {...} _Atomic   x;

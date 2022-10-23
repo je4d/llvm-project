@@ -4138,6 +4138,8 @@ StmtResult Sema::BuildReturnStmt(SourceLocation ReturnLoc, Expr *RetValExp,
     // In C++ the return statement is handled via a copy initialization,
     // the C version of which boils down to CheckSingleAssignmentConstraints.
     if (!HasDependentReturnType && !RetValExp->isTypeDependent()) {
+      RetType = Context.getConstPropagatedType(RetType);
+
       // we have a non-void function with an expression, continue checking
       InitializedEntity Entity =
           InitializedEntity::InitializeResult(ReturnLoc, RetType);
