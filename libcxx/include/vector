@@ -400,6 +400,9 @@ public:
   typedef typename __alloc_traits::difference_type difference_type;
   typedef typename __alloc_traits::pointer pointer;
   typedef typename __alloc_traits::const_pointer const_pointer;
+#if _LIBCPP_STD_VER >= 26
+  typedef typename __alloc_traits::propconst_pointer propconst_pointer;
+#endif
   // TODO: Implement iterator bounds checking without requiring the global database.
   typedef __wrap_iter<pointer> iterator;
   typedef __wrap_iter<const_pointer> const_iterator;
@@ -724,10 +727,15 @@ public:
   _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI bool __invariants() const;
 
 private:
-  pointer __begin_ = nullptr;
-  pointer __end_   = nullptr;
-  __compressed_pair<pointer, allocator_type> __end_cap_ =
-      __compressed_pair<pointer, allocator_type>(nullptr, __default_init_tag());
+#if _LIBCPP_STD_VER < 26
+  typedef pointer __storage_pointer;
+#else
+  using __storage_pointer = propconst_pointer;
+#endif
+  __storage_pointer __begin_ = nullptr;
+  __storage_pointer __end_   = nullptr;
+  __compressed_pair<__storage_pointer, allocator_type> __end_cap_ =
+      __compressed_pair<__storage_pointer, allocator_type>(nullptr, __default_init_tag());
 
   //  Allocate space for __n objects
   //  throws length_error if __n > max_size()
@@ -910,10 +918,10 @@ private:
   _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI const allocator_type& __alloc() const _NOEXCEPT {
     return this->__end_cap_.second();
   }
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI pointer& __end_cap() _NOEXCEPT {
+  _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI __storage_pointer& __end_cap() _NOEXCEPT {
     return this->__end_cap_.first();
   }
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI const pointer& __end_cap() const _NOEXCEPT {
+  _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI const __storage_pointer& __end_cap() const _NOEXCEPT {
     return this->__end_cap_.first();
   }
 
