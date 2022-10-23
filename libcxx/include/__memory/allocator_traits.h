@@ -59,6 +59,20 @@ struct __const_pointer<_Tp, _Ptr, _Alloc, false> {
 #endif
 };
 
+#if _LIBCPP_STD_VER >= 23
+// __propconst_pointer
+_LIBCPP_ALLOCATOR_TRAITS_HAS_XXX(__has_propconst_pointer, propconst_pointer);
+template <class _Tp, class _Ptr, class _Alloc,
+          bool = __has_propconst_pointer<_Alloc>::value>
+struct __propconst_pointer {
+    using type _LIBCPP_NODEBUG = typename _Alloc::propconst_pointer;
+};
+template <class _Tp, class _Ptr, class _Alloc>
+struct __propconst_pointer<_Tp, _Ptr, _Alloc, false> {
+    using type _LIBCPP_NODEBUG = typename pointer_traits<_Ptr>::template rebind<propconst _Tp>;
+};
+#endif
+
 // __void_pointer
 _LIBCPP_ALLOCATOR_TRAITS_HAS_XXX(__has_void_pointer, void_pointer);
 template <class _Ptr, class _Alloc,
@@ -230,6 +244,9 @@ struct _LIBCPP_TEMPLATE_VIS allocator_traits
     using value_type = typename allocator_type::value_type;
     using pointer = typename __pointer<value_type, allocator_type>::type;
     using const_pointer = typename __const_pointer<value_type, pointer, allocator_type>::type;
+#if _LIBCPP_STD_VER >= 23
+    using propconst_pointer = typename __propconst_pointer<value_type, pointer, allocator_type>::type;
+#endif
     using void_pointer = typename __void_pointer<pointer, allocator_type>::type;
     using const_void_pointer = typename __const_void_pointer<pointer, allocator_type>::type;
     using difference_type = typename __alloc_traits_difference_type<allocator_type, pointer>::type;
