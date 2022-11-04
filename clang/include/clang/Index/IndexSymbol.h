@@ -71,7 +71,8 @@ enum class SymbolLanguage : uint8_t {
 /// Language specific sub-kinds.
 enum class SymbolSubKind : uint8_t {
   None,
-  CXXCopyConstructor,
+  CXXNonConstCopyConstructor,
+  CXXConstCopyConstructor,
   CXXMoveConstructor,
   AccessorGetter,
   AccessorSetter,

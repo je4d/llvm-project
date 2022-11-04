@@ -4027,7 +4027,8 @@ namespace {
     }
 
     void VisitCXXConstructExpr(CXXConstructExpr *E) {
-      if (E->getConstructor()->isCopyConstructor()) {
+      if (E->getConstructor()->isNonConstCopyConstructor() ||
+          E->getConstructor()->isConstCopyConstructor()) {
         Expr *ArgExpr = E->getArg(0);
         if (InitListExpr *ILE = dyn_cast<InitListExpr>(ArgExpr))
           if (ILE->getNumInits() == 1)
@@ -5200,7 +5201,7 @@ struct BaseAndFieldInfo {
     bool Generated = Ctor->isImplicit() || Ctor->isDefaulted();
     if (Ctor->getInheritedConstructor())
       IIK = IIK_Inherit;
-    else if (Generated && Ctor->isCopyConstructor())
+    else if (Generated && (Ctor->isNonConstCopyConstructor() || Ctor->isConstCopyConstructor()))
       IIK = IIK_Copy;
     else if (Generated && Ctor->isMoveConstructor())
       IIK = IIK_Move;
@@ -6789,8 +6790,11 @@ Sema::getDefaultedFunctionKind(const FunctionDecl *FD) {
       if (Ctor->isDefaultConstructor())
         return Sema::CXXDefaultConstructor;
 
-      if (Ctor->isCopyConstructor())
-        return Sema::CXXCopyConstructor;
+      if (Ctor->isNonConstCopyConstructor())
+        return Sema::CXXNonConstCopyConstructor;
+
+      if (Ctor->isConstCopyConstructor())
+        return Sema::CXXConstCopyConstructor;
 
       if (Ctor->isMoveConstructor())
         return Sema::CXXMoveConstructor;
@@ -6847,7 +6851,8 @@ static void DefineDefaultedFunction(Sema &S, FunctionDecl *FD,
     S.DefineImplicitDefaultConstructor(DefaultLoc,
                                        cast<CXXConstructorDecl>(FD));
     break;
-  case Sema::CXXCopyConstructor:
+  case Sema::CXXNonConstCopyConstructor:
+  case Sema::CXXConstCopyConstructor:
     S.DefineImplicitCopyConstructor(DefaultLoc, cast<CXXConstructorDecl>(FD));
     break;
   case Sema::CXXCopyAssignment:
@@ -6876,9 +6881,12 @@ static bool canPassInRegisters(Sema &S, CXXRecordDecl *D,
 
   // Clang <= 4 used the pre-C++11 rule, which ignores move operations.
   // The PS4 platform ABI follows the behavior of Clang 3.2.
+  /* TODO: we might want to distinguish between passing as const / non const
+   * depending on the param decl */
   if (CCK == TargetInfo::CCK_ClangABI4OrPS4)
     return !D->hasNonTrivialDestructorForCall() &&
-           !D->hasNonTrivialCopyConstructorForCall();
+           !D->hasNonTrivialNonConstCopyConstructorForCall() &&
+           !D->hasNonTrivialConstCopyConstructorForCall();
 
   if (CCK == TargetInfo::CCK_MicrosoftWin64) {
     bool CopyCtorIsTrivial = false, CopyCtorIsTrivialForCall = false;
@@ -6891,15 +6899,17 @@ static bool canPassInRegisters(Sema &S, CXXRecordDecl *D,
     // passed in registers, so long as they *also* have a trivial copy ctor,
     // which is non-conforming.
     if (D->needsImplicitCopyConstructor()) {
-      if (!D->defaultedCopyConstructorIsDeleted()) {
-        if (D->hasTrivialCopyConstructor())
+      if (!D->defaultedNonConstCopyConstructorIsDeleted()) {
+        /* TODO: something with ConstCopyCtor */
+        if (D->hasTrivialNonConstCopyConstructor())
           CopyCtorIsTrivial = true;
-        if (D->hasTrivialCopyConstructorForCall())
+        if (D->hasTrivialNonConstCopyConstructorForCall())
           CopyCtorIsTrivialForCall = true;
       }
     } else {
       for (const CXXConstructorDecl *CD : D->ctors()) {
-        if (CD->isCopyConstructor() && !CD->isDeleted() &&
+        /* TODO: something with ConstCopyCtor */
+        if (CD->isNonConstCopyConstructor() && !CD->isDeleted() &&
             !CD->isIneligibleOrNotSelected()) {
           if (CD->isTrivial())
             CopyCtorIsTrivial = true;
@@ -6947,9 +6957,10 @@ static bool canPassInRegisters(Sema &S, CXXRecordDecl *D,
   //   or move constructor
   bool HasNonDeletedCopyOrMove = false;
 
+  /* TODO: something with ConstCopyCtor */
   if (D->needsImplicitCopyConstructor() &&
-      !D->defaultedCopyConstructorIsDeleted()) {
-    if (!D->hasTrivialCopyConstructorForCall())
+      !D->defaultedNonConstCopyConstructorIsDeleted()) {
+    if (!D->hasTrivialNonConstCopyConstructorForCall())
       return false;
     HasNonDeletedCopyOrMove = true;
   }
@@ -7107,6 +7118,7 @@ void Sema::CheckCompletedCXXClass(Scope *S, CXXRecordDecl *Record) {
 
   // Set HasTrivialSpecialMemberForCall if the record has attribute
   // "trivial_abi".
+  // TODO: check that this is correct
   bool HasTrivialABI = Record->hasAttr<TrivialABIAttr>();
 
   if (HasTrivialABI)
@@ -7197,8 +7209,8 @@ void Sema::CheckCompletedCXXClass(Scope *S, CXXRecordDecl *Record) {
 
     // Set triviality for the purpose of calls if this is a user-provided
     // copy/move constructor or destructor.
-    if ((CSM == CXXCopyConstructor || CSM == CXXMoveConstructor ||
-         CSM == CXXDestructor) && M->isUserProvided()) {
+    if ((CSM == CXXNonConstCopyConstructor || CSM == CXXConstCopyConstructor ||
+         CSM == CXXMoveConstructor || CSM == CXXDestructor) && M->isUserProvided()) {
       M->setTrivialForCall(HasTrivialABI);
       Record->setTrivialForCallFlags(M);
     }
@@ -7207,8 +7219,8 @@ void Sema::CheckCompletedCXXClass(Scope *S, CXXRecordDecl *Record) {
         M->hasAttr<DLLExportAttr>()) {
       if (getLangOpts().isCompatibleWithMSVC(LangOptions::MSVC2015) &&
           M->isTrivial() &&
-          (CSM == CXXDefaultConstructor || CSM == CXXCopyConstructor ||
-           CSM == CXXDestructor))
+          (CSM == CXXDefaultConstructor || CSM == CXXNonConstCopyConstructor ||
+           CSM == CXXConstCopyConstructor || CSM == CXXDestructor))
         M->dropAttr<DLLExportAttr>();
 
       if (M->hasAttr<DLLExportAttr>()) {
@@ -7506,7 +7518,8 @@ static bool defaultedSpecialMemberIsConstexpr(
     // constructor is constexpr to determine whether the type is a literal type.
     return ClassDecl->defaultedDefaultConstructorIsConstexpr();
 
-  case Sema::CXXCopyConstructor:
+  case Sema::CXXNonConstCopyConstructor:
+  case Sema::CXXConstCopyConstructor:
   case Sema::CXXMoveConstructor:
     // For copy or move constructors, we need to perform overload resolution.
     break;
@@ -7745,8 +7758,10 @@ bool Sema::CheckExplicitlyDefaultedSpecialMember(CXXMethodDecl *MD,
   const FunctionProtoType *Type = MD->getType()->castAs<FunctionProtoType>();
 
   bool CanHaveConstParam = false;
-  if (CSM == CXXCopyConstructor)
-    CanHaveConstParam = RD->implicitCopyConstructorHasConstParam();
+  if (CSM == CXXNonConstCopyConstructor)
+    CanHaveConstParam = RD->implicitNonConstCopyConstructorHasConstParam();
+  else if (CSM == CXXConstCopyConstructor)
+    CanHaveConstParam = RD->implicitConstCopyConstructorCanExist();
   else if (CSM == CXXCopyAssignment)
     CanHaveConstParam = RD->implicitCopyAssignmentHasConstParam();
 
@@ -7823,7 +7838,7 @@ bool Sema::CheckExplicitlyDefaultedSpecialMember(CXXMethodDecl *MD,
     if (HasConstParam && !CanHaveConstParam) {
       if (DeleteOnTypeMismatch)
         ShouldDeleteForTypeMismatch = true;
-      else if (CSM == CXXCopyConstructor || CSM == CXXCopyAssignment) {
+      else if (CSM == CXXNonConstCopyConstructor || CSM == CXXConstCopyConstructor || CSM == CXXCopyAssignment) {
         Diag(MD->getLocation(),
              diag::err_defaulted_special_member_copy_const_param)
           << (CSM == CXXCopyAssignment);
@@ -9282,7 +9297,8 @@ struct SpecialMemberVisitor {
       : S(S), MD(MD), CSM(CSM), ICI(ICI) {
     switch (CSM) {
     case Sema::CXXDefaultConstructor:
-    case Sema::CXXCopyConstructor:
+    case Sema::CXXNonConstCopyConstructor:
+    case Sema::CXXConstCopyConstructor:
     case Sema::CXXMoveConstructor:
       IsConstructor = true;
       break;
@@ -9632,7 +9648,7 @@ bool SpecialMemberDeletionInfo::shouldDeleteForField(FieldDecl *FD) {
 
     if (inUnion() && !FieldType.isConstQualified())
       AllFieldsAreConst = false;
-  } else if (CSM == Sema::CXXCopyConstructor) {
+  } else if (CSM == Sema::CXXNonConstCopyConstructor || CSM == Sema::CXXConstCopyConstructor) {
     // For a copy constructor, data members must not be of rvalue reference
     // type.
     if (FieldType->isRValueReferenceType()) {
@@ -15642,7 +15658,10 @@ void Sema::DefineImplicitMoveAssignment(SourceLocation CurrentLocation,
 }
 
 CXXConstructorDecl *Sema::DeclareImplicitCopyConstructor(
-                                                    CXXRecordDecl *ClassDecl) {
+                                                    CXXRecordDecl *ClassDecl, unsigned Quals) {
+  assert(!(Quals & ~Qualifiers::Const));
+  /* TODO: apply Quals to constructor signature */
+
   // C++ [class.copy]p4:
   //   If the class definition does not explicitly declare a copy
   //   constructor, one is declared implicitly.
@@ -15656,7 +15675,7 @@ CXXConstructorDecl *Sema::DeclareImplicitCopyConstructor(
   QualType ArgType = ClassType;
   ArgType = Context.getElaboratedType(ElaboratedTypeKeyword::None, nullptr,
                                       ArgType, nullptr);
-  bool Const = ClassDecl->implicitCopyConstructorHasConstParam();
+  bool Const = (Quals & Qualifiers::Const) || ClassDecl->implicitNonConstCopyConstructorHasConstParam();
   if (Const)
     ArgType = ArgType.withConst();
 
