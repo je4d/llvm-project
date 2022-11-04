@@ -208,6 +208,8 @@ public:
     min_pointer(std::nullptr_t) TEST_NOEXCEPT : ptr_(nullptr) {}
     template <class T>
     min_pointer(min_pointer<T, ID> p) TEST_NOEXCEPT : ptr_(p.ptr_) {}
+    template <class T>
+    min_pointer& operator=(min_pointer<T, ID> p) TEST_NOEXCEPT { ptr_ = p.ptr_; return *this; }
 
     explicit operator bool() const {return ptr_ != nullptr;}
 

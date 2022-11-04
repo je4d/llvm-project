@@ -88,7 +88,8 @@ CXXRecordDecl::DefinitionData::DefinitionData(CXXRecordDecl *D)
       NeedOverloadResolutionForCopyAssignment(false),
       NeedOverloadResolutionForMoveAssignment(false),
       NeedOverloadResolutionForDestructor(false),
-      DefaultedCopyConstructorIsDeleted(false),
+      DefaultedNonConstCopyConstructorIsDeleted(false),
+      DefaultedConstCopyConstructorIsDeleted(false),
       DefaultedMoveConstructorIsDeleted(false),
       DefaultedCopyAssignmentIsDeleted(false),
       DefaultedMoveAssignmentIsDeleted(false),
@@ -103,10 +104,13 @@ CXXRecordDecl::DefinitionData::DefinitionData(CXXRecordDecl *D)
       DefaultedDestructorIsConstexpr(true),
       HasNonLiteralTypeFieldsOrBases(false), StructuralIfLiteral(true),
       UserProvidedDefaultConstructor(false), DeclaredSpecialMembers(0),
-      ImplicitCopyConstructorCanHaveConstParamForVBase(true),
-      ImplicitCopyConstructorCanHaveConstParamForNonVBase(true),
+      ImplicitNonConstCopyConstructorCanHaveConstParamForVBase(true),
+      ImplicitConstCopyConstructorCanExistForVBase(true),
+      ImplicitNonConstCopyConstructorCanHaveConstParamForNonVBase(true),
+      ImplicitConstCopyConstructorCanExistForNonVBase(true),
       ImplicitCopyAssignmentHasConstParam(true),
-      HasDeclaredCopyConstructorWithConstParam(false),
+      HasDeclaredNonConstCopyConstructorWithConstParam(false),
+      HasDeclaredConstCopyConstructorWithConstParam(false),
       HasDeclaredCopyAssignmentWithConstParam(false),
       IsAnyDestructorNoReturn(false), IsLambda(false),
       IsParsingBaseSpecifiers(false), ComputedVisibleConversions(false),
@@ -304,9 +308,12 @@ CXXRecordDecl::setBases(CXXBaseSpecifier const * const *Bases,
         //   the form 'X::X(const X&)' if each [...] virtual base class B of X
         //   has a copy constructor whose first parameter is of type
         //   'const B&' or 'const volatile B&' [...]
-        if (CXXRecordDecl *VBaseDecl = VBase.getType()->getAsCXXRecordDecl())
-          if (!VBaseDecl->hasCopyConstructorWithConstParam())
-            data().ImplicitCopyConstructorCanHaveConstParamForVBase = false;
+        if (CXXRecordDecl *VBaseDecl = VBase.getType()->getAsCXXRecordDecl()) {
+          if (!VBaseDecl->hasNonConstCopyConstructorWithConstParam())
+            data().ImplicitNonConstCopyConstructorCanHaveConstParamForVBase = false;
+          if (!VBaseDecl->hasConstCopyConstructorWithConstParam())
+            data().ImplicitConstCopyConstructorCanExistForVBase = false;
+        }
 
         // C++1z [dcl.init.agg]p1:
         //   An aggregate is a class with [...] no virtual base classes
@@ -353,8 +360,10 @@ CXXRecordDecl::setBases(CXXBaseSpecifier const * const *Bases,
       //   the form 'X::X(const X&)' if each potentially constructed subobject
       //   has a copy constructor whose first parameter is of type
       //   'const B&' or 'const volatile B&' [...]
-      if (!BaseClassDecl->hasCopyConstructorWithConstParam())
-        data().ImplicitCopyConstructorCanHaveConstParamForVBase = false;
+      if (!BaseClassDecl->hasNonConstCopyConstructorWithConstParam())
+        data().ImplicitNonConstCopyConstructorCanHaveConstParamForVBase = false;
+      if (!BaseClassDecl->hasConstCopyConstructorWithConstParam())
+        data().ImplicitConstCopyConstructorCanExistForVBase = false;
     } else {
       // C++ [class.ctor]p5:
       //   A default constructor is trivial [...] if:
@@ -368,11 +377,17 @@ CXXRecordDecl::setBases(CXXBaseSpecifier const * const *Bases,
       //    [...]
       //    -- the constructor selected to copy/move each direct base class
       //       subobject is trivial, and
-      if (!BaseClassDecl->hasTrivialCopyConstructor())
-        data().HasTrivialSpecialMembers &= ~SMF_CopyConstructor;
+      if (!BaseClassDecl->hasTrivialNonConstCopyConstructor())
+        data().HasTrivialSpecialMembers &= ~SMF_NonConstCopyConstructor;
 
-      if (!BaseClassDecl->hasTrivialCopyConstructorForCall())
-        data().HasTrivialSpecialMembersForCall &= ~SMF_CopyConstructor;
+      if (!BaseClassDecl->hasTrivialConstCopyConstructor())
+        data().HasTrivialSpecialMembers &= ~SMF_ConstCopyConstructor;
+
+      if (!BaseClassDecl->hasTrivialNonConstCopyConstructorForCall())
+        data().HasTrivialSpecialMembersForCall &= ~SMF_NonConstCopyConstructor;
+
+      if (!BaseClassDecl->hasTrivialConstCopyConstructorForCall())
+        data().HasTrivialSpecialMembersForCall &= ~SMF_ConstCopyConstructor;
 
       // If the base class doesn't have a simple move constructor, we'll eagerly
       // declare it and perform overload resolution to determine which function
@@ -410,8 +425,10 @@ CXXRecordDecl::setBases(CXXBaseSpecifier const * const *Bases,
       //   the form 'X::X(const X&)' if each potentially constructed subobject
       //   has a copy constructor whose first parameter is of type
       //   'const B&' or 'const volatile B&' [...]
-      if (!BaseClassDecl->hasCopyConstructorWithConstParam())
-        data().ImplicitCopyConstructorCanHaveConstParamForNonVBase = false;
+      if (!BaseClassDecl->hasNonConstCopyConstructorWithConstParam())
+        data().ImplicitNonConstCopyConstructorCanHaveConstParamForNonVBase = false;
+      if (!BaseClassDecl->hasConstCopyConstructorWithConstParam())
+        data().ImplicitConstCopyConstructorCanExistForNonVBase = false;
     }
 
     // C++ [class.ctor]p3:
@@ -513,7 +530,12 @@ void CXXRecordDecl::addedClassSubobject(CXXRecordDecl *Subobj) {
   //    -- a direct or virtual base class B that cannot be copied/moved [...]
   //    -- a non-static data member of class type M (or array thereof)
   //       that cannot be copied or moved [...]
-  if (!Subobj->hasSimpleCopyConstructor())
+  if (!Subobj->hasSimpleNonConstCopyConstructor())
+    data().NeedOverloadResolutionForCopyConstructor = true;
+  if (!Subobj->hasSimpleConstCopyConstructor())
+    data().NeedOverloadResolutionForCopyConstructor = true;
+  // XXX: this is a guess
+  if (implicitNonConstCopyConstructorHasConstParam() && implicitConstCopyConstructorCanExist())
     data().NeedOverloadResolutionForCopyConstructor = true;
   if (!Subobj->hasSimpleMoveConstructor())
     data().NeedOverloadResolutionForMoveConstructor = true;
@@ -574,7 +596,8 @@ bool CXXRecordDecl::isTriviallyCopyable() const {
   // C++0x [class]p5:
   //   A trivially copyable class is a class that:
   //   -- has no non-trivial copy constructors,
-  if (hasNonTrivialCopyConstructor()) return false;
+  if (hasNonTrivialNonConstCopyConstructor()) return false;
+  if (hasNonTrivialConstCopyConstructor()) return false;
   //   -- has no non-trivial move constructors,
   if (hasNonTrivialMoveConstructor()) return false;
   //   -- has no non-trivial copy assignment operators,
@@ -789,11 +812,16 @@ void CXXRecordDecl::addedMember(Decl *D) {
 
       if (!FunTmpl) {
         unsigned Quals;
-        if (Constructor->isCopyConstructor(Quals)) {
-          SMKind |= SMF_CopyConstructor;
+        if (Constructor->isNonConstCopyConstructor(Quals)) {
+          SMKind |= SMF_NonConstCopyConstructor;
 
           if (Quals & Qualifiers::Const)
-            data().HasDeclaredCopyConstructorWithConstParam = true;
+            data().HasDeclaredNonConstCopyConstructorWithConstParam = true;
+        } else if (Constructor->isNonConstCopyConstructor(Quals)) {
+          SMKind |= SMF_ConstCopyConstructor;
+
+          if (Quals & Qualifiers::Const)
+            data().HasDeclaredConstCopyConstructorWithConstParam = true;
         } else if (Constructor->isMoveConstructor())
           SMKind |= SMF_MoveConstructor;
       }
@@ -1027,7 +1055,7 @@ void CXXRecordDecl::addedMember(Decl *D) {
         Data.HasIrrelevantDestructor = false;
 
         if (isUnion()) {
-          data().DefaultedCopyConstructorIsDeleted = true;
+          data().DefaultedNonConstCopyConstructorIsDeleted = true;
           data().DefaultedMoveConstructorIsDeleted = true;
           data().DefaultedCopyAssignmentIsDeleted = true;
           data().DefaultedMoveAssignmentIsDeleted = true;
@@ -1057,8 +1085,10 @@ void CXXRecordDecl::addedMember(Decl *D) {
       // C++1z [class.copy.ctor]p10:
       //   A defaulted copy constructor for a class X is defined as deleted if X has:
       //    -- a non-static data member of rvalue reference type
-      if (T->isRValueReferenceType())
-        data().DefaultedCopyConstructorIsDeleted = true;
+      if (T->isRValueReferenceType()) {
+        data().DefaultedNonConstCopyConstructorIsDeleted = true;
+        data().DefaultedConstCopyConstructorIsDeleted = true;
+      }
     }
 
     if (!Field->hasInClassInitializer() && !Field->isMutable()) {
@@ -1133,8 +1163,10 @@ void CXXRecordDecl::addedMember(Decl *D) {
         //    -- X is a union-like class that has a variant member with a
         //       non-trivial [corresponding special member]
         if (isUnion()) {
-          if (FieldRec->hasNonTrivialCopyConstructor())
-            data().DefaultedCopyConstructorIsDeleted = true;
+          if (FieldRec->hasNonTrivialNonConstCopyConstructor())
+            data().DefaultedNonConstCopyConstructorIsDeleted = true;
+          if (FieldRec->hasNonTrivialConstCopyConstructor())
+            data().DefaultedConstCopyConstructorIsDeleted = true;
           if (FieldRec->hasNonTrivialMoveConstructor())
             data().DefaultedMoveConstructorIsDeleted = true;
           if (FieldRec->hasNonTrivialCopyAssignment())
@@ -1174,11 +1206,17 @@ void CXXRecordDecl::addedMember(Decl *D) {
         //    -- for each non-static data member of X that is of class type (or
         //       an array thereof), the constructor selected to copy/move that
         //       member is trivial;
-        if (!FieldRec->hasTrivialCopyConstructor())
-          data().HasTrivialSpecialMembers &= ~SMF_CopyConstructor;
+        if (!FieldRec->hasTrivialNonConstCopyConstructor())
+          data().HasTrivialSpecialMembers &= ~SMF_NonConstCopyConstructor;
 
-        if (!FieldRec->hasTrivialCopyConstructorForCall())
-          data().HasTrivialSpecialMembersForCall &= ~SMF_CopyConstructor;
+        if (!FieldRec->hasTrivialConstCopyConstructor())
+          data().HasTrivialSpecialMembers &= ~SMF_ConstCopyConstructor;
+
+        if (!FieldRec->hasTrivialNonConstCopyConstructorForCall())
+          data().HasTrivialSpecialMembersForCall &= ~SMF_NonConstCopyConstructor;
+
+        if (!FieldRec->hasTrivialConstCopyConstructorForCall())
+          data().HasTrivialSpecialMembersForCall &= ~SMF_ConstCopyConstructor;
 
         // If the field doesn't have a simple move constructor, we'll eagerly
         // declare the move constructor for this class and we'll decide whether
@@ -1282,8 +1320,10 @@ void CXXRecordDecl::addedMember(Decl *D) {
         //   the form 'X::X(const X&)' if each potentially constructed subobject
         //   of a class type M (or array thereof) has a copy constructor whose
         //   first parameter is of type 'const M&' or 'const volatile M&'.
-        if (!FieldRec->hasCopyConstructorWithConstParam())
-          data().ImplicitCopyConstructorCanHaveConstParamForNonVBase = false;
+        if (!FieldRec->hasNonConstCopyConstructorWithConstParam())
+          data().ImplicitNonConstCopyConstructorCanHaveConstParamForNonVBase = false;
+        if (!FieldRec->hasConstCopyConstructorWithConstParam())
+          data().ImplicitConstCopyConstructorCanExistForNonVBase = false;
 
         // C++11 [class.copy]p18:
         //   The implicitly-declared copy assignment oeprator for a class X will
@@ -1329,6 +1369,17 @@ void CXXRecordDecl::addedMember(Decl *D) {
       // We deal with class types elsewhere.
       if (!T->isStructuralType())
         data().StructuralIfLiteral = false;
+
+      if (const auto *PointerTy = T->getAs<PointerType>())
+        if (PointerTy->getPointeeType().isPropconstQualified()) {
+          data().ImplicitNonConstCopyConstructorCanHaveConstParamForNonVBase = false;
+          data().NeedOverloadResolutionForCopyConstructor = true;
+        }
+      if (const auto *ReferenceTy = T->getAs<ReferenceType>())
+        if (ReferenceTy->getPointeeType().isPropconstQualified()) {
+          data().ImplicitNonConstCopyConstructorCanHaveConstParamForNonVBase = false;
+          data().NeedOverloadResolutionForCopyConstructor = true;
+        }
     }
 
     // C++14 [meta.unary.prop]p4:
@@ -1421,8 +1472,10 @@ void CXXRecordDecl::finishedDefaultedOrDeletedMember(CXXMethodDecl *D) {
       if (Constructor->isConstexpr())
         data().HasConstexprDefaultConstructor = true;
     }
-    if (Constructor->isCopyConstructor())
-      SMKind |= SMF_CopyConstructor;
+    if (Constructor->isNonConstCopyConstructor())
+      SMKind |= SMF_NonConstCopyConstructor;
+    else if (Constructor->isConstCopyConstructor())
+      SMKind |= SMF_ConstCopyConstructor;
     else if (Constructor->isMoveConstructor())
       SMKind |= SMF_MoveConstructor;
     else if (Constructor->isConstexpr())
@@ -1472,8 +1525,10 @@ void CXXRecordDecl::setTrivialForCallFlags(CXXMethodDecl *D) {
   unsigned SMKind = 0;
 
   if (const auto *Constructor = dyn_cast<CXXConstructorDecl>(D)) {
-    if (Constructor->isCopyConstructor())
-      SMKind = SMF_CopyConstructor;
+    if (Constructor->isNonConstCopyConstructor())
+      SMKind = SMF_NonConstCopyConstructor;
+    else if (Constructor->isConstCopyConstructor())
+      SMKind = SMF_ConstCopyConstructor;
     else if (Constructor->isMoveConstructor())
       SMKind = SMF_MoveConstructor;
   } else if (isa<CXXDestructorDecl>(D))
@@ -2664,10 +2719,24 @@ bool CXXConstructorDecl::isDefaultConstructor() const {
   return getMinRequiredArguments() == 0;
 }
 
+//bool
+//CXXConstructorDecl::_isCopyConstructor(unsigned &TypeQuals) const {
+//  return isCopyOrMoveConstructor(TypeQuals) &&
+//         getParamDecl(0)->getType()->isLValueReferenceType();
+//}
+//
 bool
-CXXConstructorDecl::isCopyConstructor(unsigned &TypeQuals) const {
+CXXConstructorDecl::isNonConstCopyConstructor(unsigned &TypeQuals) const {
   return isCopyOrMoveConstructor(TypeQuals) &&
-         getParamDecl(0)->getType()->isLValueReferenceType();
+         getParamDecl(0)->getType()->isLValueReferenceType() &&
+         !getMethodQualifiers().hasConst();
+}
+
+bool
+CXXConstructorDecl::isConstCopyConstructor(unsigned &TypeQuals) const {
+  return isCopyOrMoveConstructor(TypeQuals) &&
+         getParamDecl(0)->getType()->isLValueReferenceType() &&
+         getMethodQualifiers().hasConst();
 }
 
 bool CXXConstructorDecl::isMoveConstructor(unsigned &TypeQuals) const {

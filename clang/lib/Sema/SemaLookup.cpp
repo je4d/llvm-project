@@ -3566,7 +3566,11 @@ DeclContext::lookup_result Sema::LookupConstructors(CXXRecordDecl *Class) {
       if (Class->needsImplicitDefaultConstructor())
         DeclareImplicitDefaultConstructor(Class);
       if (Class->needsImplicitCopyConstructor())
-        DeclareImplicitCopyConstructor(Class);
+      {
+        DeclareImplicitCopyConstructor(Class, 0);
+        if ((!Class->implicitNonConstCopyConstructorHasConstParam()) && Class->implicitConstCopyConstructorCanExist())
+          DeclareImplicitCopyConstructor(Class, Qualifiers::Const);
+      }
       if (getLangOpts().CPlusPlus11 && Class->needsImplicitMoveConstructor())
         DeclareImplicitMoveConstructor(Class);
     });

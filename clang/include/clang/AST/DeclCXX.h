@@ -268,12 +268,13 @@ class CXXRecordDecl : public RecordDecl {
   /// Values used in DefinitionData fields to represent special members.
   enum SpecialMemberFlags {
     SMF_DefaultConstructor = 0x1,
-    SMF_CopyConstructor = 0x2,
-    SMF_MoveConstructor = 0x4,
-    SMF_CopyAssignment = 0x8,
-    SMF_MoveAssignment = 0x10,
-    SMF_Destructor = 0x20,
-    SMF_All = 0x3f
+    SMF_NonConstCopyConstructor = 0x2,
+    SMF_ConstCopyConstructor = 0x4,
+    SMF_MoveConstructor = 0x8,
+    SMF_CopyAssignment = 0x10,
+    SMF_MoveAssignment = 0x20,
+    SMF_Destructor = 0x40,
+    SMF_All = 0x7f
   };
 
 public:
@@ -683,11 +684,20 @@ public:
 
   /// \c true if a defaulted copy constructor for this class would be
   /// deleted.
-  bool defaultedCopyConstructorIsDeleted() const {
+  bool defaultedNonConstCopyConstructorIsDeleted() const {
     assert((!needsOverloadResolutionForCopyConstructor() ||
-            (data().DeclaredSpecialMembers & SMF_CopyConstructor)) &&
+            (data().DeclaredSpecialMembers & SMF_NonConstCopyConstructor)) &&
            "this property has not yet been computed by Sema");
-    return data().DefaultedCopyConstructorIsDeleted;
+    return data().DefaultedNonConstCopyConstructorIsDeleted;
+  }
+
+  /// \c true if a defaulted copy constructor for this class would be
+  /// deleted.
+  bool defaultedConstCopyConstructorIsDeleted() const {
+    assert((!needsOverloadResolutionForCopyConstructor() ||
+            (data().DeclaredSpecialMembers & SMF_ConstCopyConstructor)) &&
+           "this property has not yet been computed by Sema");
+    return data().DefaultedConstCopyConstructorIsDeleted;
   }
 
   /// \c true if a defaulted move constructor for this class would be
@@ -709,9 +719,19 @@ public:
 
   /// \c true if we know for sure that this class has a single,
   /// accessible, unambiguous copy constructor that is not deleted.
-  bool hasSimpleCopyConstructor() const {
-    return !hasUserDeclaredCopyConstructor() &&
-           !data().DefaultedCopyConstructorIsDeleted;
+  /* TODO:
+   * used for:
+   * - deciding whether we can capture by copy
+   * - deciding whether we need overload resolution for the copy ctor
+   * */
+  bool hasSimpleNonConstCopyConstructor() const {
+    return !hasUserDeclaredNonConstCopyConstructor() &&
+           !data().DefaultedNonConstCopyConstructorIsDeleted;
+  }
+
+  bool hasSimpleConstCopyConstructor() const {
+    return !hasUserDeclaredConstCopyConstructor() &&
+           !data().DefaultedConstCopyConstructorIsDeleted;
   }
 
   /// \c true if we know for sure that this class has a single,
@@ -779,14 +799,18 @@ public:
   /// Determine whether this class has a user-declared copy constructor.
   ///
   /// When false, a copy constructor will be implicitly declared.
-  bool hasUserDeclaredCopyConstructor() const {
-    return data().UserDeclaredSpecialMembers & SMF_CopyConstructor;
+  bool hasUserDeclaredNonConstCopyConstructor() const {
+    return data().UserDeclaredSpecialMembers & SMF_NonConstCopyConstructor;
+  }
+
+  bool hasUserDeclaredConstCopyConstructor() const {
+    return data().UserDeclaredSpecialMembers & SMF_ConstCopyConstructor;
   }
 
   /// Determine whether this class needs an implicit copy
   /// constructor to be lazily declared.
   bool needsImplicitCopyConstructor() const {
-    return !(data().DeclaredSpecialMembers & SMF_CopyConstructor);
+    return !(data().DeclaredSpecialMembers & (SMF_NonConstCopyConstructor|SMF_ConstCopyConstructor));
   }
 
   /// Determine whether we need to eagerly declare a defaulted copy
@@ -804,20 +828,36 @@ public:
     return data().NeedOverloadResolutionForCopyConstructor;
   }
 
-  /// Determine whether an implicit copy constructor for this type
+  /// Determine whether an implicit non-const-qualified copy constructor for this type
   /// would have a parameter with a const-qualified reference type.
-  bool implicitCopyConstructorHasConstParam() const {
-    return data().ImplicitCopyConstructorCanHaveConstParamForNonVBase &&
+  bool implicitNonConstCopyConstructorHasConstParam() const {
+    return data().ImplicitNonConstCopyConstructorCanHaveConstParamForNonVBase &&
            (isAbstract() ||
-            data().ImplicitCopyConstructorCanHaveConstParamForVBase);
+            data().ImplicitNonConstCopyConstructorCanHaveConstParamForVBase);
   }
 
-  /// Determine whether this class has a copy constructor with
+  /// Determine whether an implicit const-qualified copy constructor for this type
+  /// can exist
+  bool implicitConstCopyConstructorCanExist() const {
+    return data().ImplicitConstCopyConstructorCanExistForNonVBase &&
+           (isAbstract() ||
+            data().ImplicitConstCopyConstructorCanExistForVBase);
+  }
+
+  /// Determine whether this class has a non-const copy constructor with
   /// a parameter type which is a reference to a const-qualified type.
-  bool hasCopyConstructorWithConstParam() const {
-    return data().HasDeclaredCopyConstructorWithConstParam ||
+  bool hasNonConstCopyConstructorWithConstParam() const {
+    return data().HasDeclaredNonConstCopyConstructorWithConstParam ||
            (needsImplicitCopyConstructor() &&
-            implicitCopyConstructorHasConstParam());
+            implicitNonConstCopyConstructorHasConstParam());
+  }
+
+  /// Determine whether this class has a const copy constructor with
+  /// a parameter type which is a reference to a const-qualified type.
+  bool hasConstCopyConstructorWithConstParam() const {
+    return data().HasDeclaredConstCopyConstructorWithConstParam ||
+           (needsImplicitCopyConstructor() &&
+            implicitConstCopyConstructorCanExist());
   }
 
   /// Whether this class has a user-declared move constructor or
@@ -844,11 +884,20 @@ public:
 
   /// Set that we attempted to declare an implicit copy
   /// constructor, but overload resolution failed so we deleted it.
-  void setImplicitCopyConstructorIsDeleted() {
-    assert((data().DefaultedCopyConstructorIsDeleted ||
+  void setImplicitNonConstCopyConstructorIsDeleted() {
+    assert((data().DefaultedNonConstCopyConstructorIsDeleted ||
             needsOverloadResolutionForCopyConstructor()) &&
            "Copy constructor should not be deleted");
-    data().DefaultedCopyConstructorIsDeleted = true;
+    data().DefaultedNonConstCopyConstructorIsDeleted = true;
+  }
+
+  /// Set that we attempted to declare an implicit copy
+  /// constructor, but overload resolution failed so we deleted it.
+  void setImplicitConstCopyConstructorIsDeleted() {
+    assert((data().DefaultedConstCopyConstructorIsDeleted ||
+            needsOverloadResolutionForCopyConstructor()) &&
+           "Copy constructor should not be deleted");
+    data().DefaultedConstCopyConstructorIsDeleted = true;
   }
 
   /// Set that we attempted to declare an implicit move
@@ -873,7 +922,8 @@ public:
   /// constructor or if any existing special member function inhibits this.
   bool needsImplicitMoveConstructor() const {
     return !(data().DeclaredSpecialMembers & SMF_MoveConstructor) &&
-           !hasUserDeclaredCopyConstructor() &&
+           !hasUserDeclaredNonConstCopyConstructor() &&
+           !hasUserDeclaredConstCopyConstructor() &&
            !hasUserDeclaredCopyAssignment() &&
            !hasUserDeclaredMoveAssignment() &&
            !hasUserDeclaredDestructor();
@@ -964,7 +1014,8 @@ public:
   /// this.
   bool needsImplicitMoveAssignment() const {
     return !(data().DeclaredSpecialMembers & SMF_MoveAssignment) &&
-           !hasUserDeclaredCopyConstructor() &&
+           !hasUserDeclaredNonConstCopyConstructor() &&
+           !hasUserDeclaredConstCopyConstructor() &&
            !hasUserDeclaredCopyAssignment() &&
            !hasUserDeclaredMoveConstructor() &&
            !hasUserDeclaredDestructor() &&
@@ -1232,25 +1283,46 @@ public:
 
   /// Determine whether this class has a trivial copy constructor
   /// (C++ [class.copy]p6, C++11 [class.copy]p12)
-  bool hasTrivialCopyConstructor() const {
-    return data().HasTrivialSpecialMembers & SMF_CopyConstructor;
+  bool hasTrivialNonConstCopyConstructor() const {
+    return data().HasTrivialSpecialMembers & SMF_NonConstCopyConstructor;
   }
 
-  bool hasTrivialCopyConstructorForCall() const {
-    return data().HasTrivialSpecialMembersForCall & SMF_CopyConstructor;
+  /// Determine whether this class has a trivial copy constructor
+  /// (C++ [class.copy]p6, C++11 [class.copy]p12)
+  bool hasTrivialConstCopyConstructor() const {
+    return data().HasTrivialSpecialMembers & SMF_ConstCopyConstructor;
+  }
+
+  bool hasTrivialNonConstCopyConstructorForCall() const {
+    return data().HasTrivialSpecialMembersForCall & SMF_NonConstCopyConstructor;
+  }
+
+  bool hasTrivialConstCopyConstructorForCall() const {
+    return data().HasTrivialSpecialMembersForCall & SMF_ConstCopyConstructor;
   }
 
   /// Determine whether this class has a non-trivial copy constructor
   /// (C++ [class.copy]p6, C++11 [class.copy]p12)
-  bool hasNonTrivialCopyConstructor() const {
-    return data().DeclaredNonTrivialSpecialMembers & SMF_CopyConstructor ||
-           !hasTrivialCopyConstructor();
+  bool hasNonTrivialNonConstCopyConstructor() const {
+    return data().DeclaredNonTrivialSpecialMembers & SMF_NonConstCopyConstructor ||
+           !hasTrivialNonConstCopyConstructor();
   }
 
-  bool hasNonTrivialCopyConstructorForCall() const {
+  bool hasNonTrivialConstCopyConstructor() const {
+    return data().DeclaredNonTrivialSpecialMembers & SMF_ConstCopyConstructor ||
+           !hasTrivialConstCopyConstructor();
+  }
+
+  bool hasNonTrivialNonConstCopyConstructorForCall() const {
     return (data().DeclaredNonTrivialSpecialMembersForCall &
-            SMF_CopyConstructor) ||
-           !hasTrivialCopyConstructorForCall();
+            SMF_NonConstCopyConstructor) ||
+           !hasTrivialNonConstCopyConstructorForCall();
+  }
+
+  bool hasNonTrivialConstCopyConstructorForCall() const {
+    return (data().DeclaredNonTrivialSpecialMembersForCall &
+            SMF_ConstCopyConstructor) ||
+           !hasTrivialConstCopyConstructorForCall();
   }
 
   /// Determine whether this class has a trivial move constructor
@@ -1340,7 +1412,7 @@ public:
 
   void setHasTrivialSpecialMemberForCall() {
     data().HasTrivialSpecialMembersForCall =
-        (SMF_CopyConstructor | SMF_MoveConstructor | SMF_Destructor);
+        (SMF_NonConstCopyConstructor | SMF_ConstCopyConstructor | SMF_MoveConstructor | SMF_Destructor);
   }
 
   /// Determine whether declaring a const variable with this type is ok
@@ -2614,15 +2686,30 @@ public:
   ///   X(const X&);
   /// };
   /// \endcode
-  bool isCopyConstructor(unsigned &TypeQuals) const;
+//  bool isCopyConstructor(unsigned &TypeQuals) const;
+  bool isNonConstCopyConstructor(unsigned &TypeQuals) const;
+  bool isConstCopyConstructor(unsigned &TypeQuals) const;
 
+//  /// Whether this constructor is a copy
+//  /// constructor (C++ [class.copy]p2, which can be used to copy the
+//  /// class.
+//  bool isCopyConstructor() const {
+//    unsigned TypeQuals = 0;
+//    return isCopyConstructor(TypeQuals);
+//  }
   /// Whether this constructor is a copy
   /// constructor (C++ [class.copy]p2, which can be used to copy the
   /// class.
-  bool isCopyConstructor() const {
+  bool isNonConstCopyConstructor() const {
     unsigned TypeQuals = 0;
-    return isCopyConstructor(TypeQuals);
+    return isNonConstCopyConstructor(TypeQuals);
   }
+
+  bool isConstCopyConstructor() const {
+    unsigned TypeQuals = 0;
+    return isConstCopyConstructor(TypeQuals);
+  }
+
 
   /// Determine whether this constructor is a move constructor
   /// (C++11 [class.copy]p3), which can be used to move values of the class.

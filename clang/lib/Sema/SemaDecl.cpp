@@ -1843,7 +1843,7 @@ static bool IsDisallowedCopyOrAssign(const CXXMethodDecl *D) {
     return false;
 
   if (const CXXConstructorDecl *CD = dyn_cast<CXXConstructorDecl>(D))
-    return CD->isCopyConstructor();
+    return CD->isNonConstCopyConstructor();
   return D->isCopyAssignmentOperator();
 }
 
@@ -12263,7 +12263,8 @@ namespace {
     void VisitObjCMessageExpr(ObjCMessageExpr *E) {}
 
     void VisitCXXConstructExpr(CXXConstructExpr *E) {
-      if (E->getConstructor()->isCopyConstructor()) {
+      if (E->getConstructor()->isNonConstCopyConstructor() ||
+          E->getConstructor()->isConstCopyConstructor()) {
         Expr *ArgExpr = E->getArg(0);
         if (InitListExpr *ILE = dyn_cast<InitListExpr>(ArgExpr))
           if (ILE->getNumInits() == 1)
@@ -17885,8 +17886,10 @@ bool Sema::CheckNontrivialField(FieldDecl *FD) {
       // user-declared constructors, we just need to check that there is a
       // trivial default constructor and a trivial copy constructor. (We don't
       // worry about move constructors here, since this is a C++98 check.)
-      if (RDecl->hasNonTrivialCopyConstructor())
-        member = CXXCopyConstructor;
+      if (RDecl->hasNonTrivialNonConstCopyConstructor())
+        member = CXXNonConstCopyConstructor;
+      else if (RDecl->hasNonTrivialConstCopyConstructor())
+        member = CXXConstCopyConstructor;
       else if (!RDecl->hasTrivialDefaultConstructor())
         member = CXXDefaultConstructor;
       else if (RDecl->hasNonTrivialCopyAssignment())
@@ -18244,7 +18247,8 @@ static void SetEligibleMethods(Sema &S, CXXRecordDecl *Record,
 static void ComputeSpecialMemberFunctionsEligiblity(Sema &S,
                                                     CXXRecordDecl *Record) {
   SmallVector<CXXMethodDecl *, 4> DefaultConstructors;
-  SmallVector<CXXMethodDecl *, 4> CopyConstructors;
+  SmallVector<CXXMethodDecl *, 4> NonConstCopyConstructors;
+  SmallVector<CXXMethodDecl *, 4> ConstCopyConstructors;
   SmallVector<CXXMethodDecl *, 4> MoveConstructors;
   SmallVector<CXXMethodDecl *, 4> CopyAssignmentOperators;
   SmallVector<CXXMethodDecl *, 4> MoveAssignmentOperators;
@@ -18263,8 +18267,10 @@ static void ComputeSpecialMemberFunctionsEligiblity(Sema &S,
         continue;
       if (CD->isDefaultConstructor())
         DefaultConstructors.push_back(MD);
-      else if (CD->isCopyConstructor())
-        CopyConstructors.push_back(MD);
+      else if (CD->isNonConstCopyConstructor())
+        NonConstCopyConstructors.push_back(MD);
+      else if (CD->isConstCopyConstructor())
+        ConstCopyConstructors.push_back(MD);
       else if (CD->isMoveConstructor())
         MoveConstructors.push_back(MD);
     } else if (MD->isCopyAssignmentOperator()) {
@@ -18276,7 +18282,8 @@ static void ComputeSpecialMemberFunctionsEligiblity(Sema &S,
 
   SetEligibleMethods(S, Record, DefaultConstructors,
                      Sema::CXXDefaultConstructor);
-  SetEligibleMethods(S, Record, CopyConstructors, Sema::CXXCopyConstructor);
+  SetEligibleMethods(S, Record, NonConstCopyConstructors, Sema::CXXNonConstCopyConstructor);
+  SetEligibleMethods(S, Record, ConstCopyConstructors, Sema::CXXConstCopyConstructor);
   SetEligibleMethods(S, Record, MoveConstructors, Sema::CXXMoveConstructor);
   SetEligibleMethods(S, Record, CopyAssignmentOperators,
                      Sema::CXXCopyAssignment);

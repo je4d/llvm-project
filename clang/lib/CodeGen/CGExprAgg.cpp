@@ -245,7 +245,8 @@ bool AggExprEmitter::TypeRequiresGCollection(QualType T) {
   // Don't mess with non-trivial C++ types.
   RecordDecl *Record = RecordTy->getDecl();
   if (isa<CXXRecordDecl>(Record) &&
-      (cast<CXXRecordDecl>(Record)->hasNonTrivialCopyConstructor() ||
+      (cast<CXXRecordDecl>(Record)->hasNonTrivialNonConstCopyConstructor() ||
+       cast<CXXRecordDecl>(Record)->hasNonTrivialConstCopyConstructor() ||
        !cast<CXXRecordDecl>(Record)->hasTrivialDestructor()))
     return false;
 
@@ -2064,7 +2065,9 @@ void CodeGenFunction::EmitAggregateCopy(LValue Dest, LValue Src, QualType Ty,
   if (getLangOpts().CPlusPlus) {
     if (const RecordType *RT = Ty->getAs<RecordType>()) {
       CXXRecordDecl *Record = cast<CXXRecordDecl>(RT->getDecl());
-      assert((Record->hasTrivialCopyConstructor() ||
+      // TODO: I don't understand why this is or'd together
+      assert((Record->hasTrivialNonConstCopyConstructor() ||
+              Record->hasTrivialConstCopyConstructor() ||
               Record->hasTrivialCopyAssignment() ||
               Record->hasTrivialMoveConstructor() ||
               Record->hasTrivialMoveAssignment() ||
