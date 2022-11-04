@@ -426,19 +426,37 @@ createDefaultConstructorDefinitionData(const CXXRecordDecl *RD) {
 }
 
 static llvm::json::Object
-createCopyConstructorDefinitionData(const CXXRecordDecl *RD) {
+createNonConstCopyConstructorDefinitionData(const CXXRecordDecl *RD) {
   llvm::json::Object Ret;
 
-  FIELD2("simple", hasSimpleCopyConstructor);
-  FIELD2("trivial", hasTrivialCopyConstructor);
-  FIELD2("nonTrivial", hasNonTrivialCopyConstructor);
-  FIELD2("userDeclared", hasUserDeclaredCopyConstructor);
-  FIELD2("hasConstParam", hasCopyConstructorWithConstParam);
-  FIELD2("implicitHasConstParam", implicitCopyConstructorHasConstParam);
+  FIELD2("simple", hasSimpleNonConstCopyConstructor);
+  FIELD2("trivial", hasTrivialNonConstCopyConstructor);
+  FIELD2("nonTrivial", hasNonTrivialNonConstCopyConstructor);
+  FIELD2("userDeclared", hasUserDeclaredNonConstCopyConstructor);
+  FIELD2("hasConstParam", hasNonConstCopyConstructorWithConstParam);
+  FIELD2("implicitHasConstParam", implicitNonConstCopyConstructorHasConstParam);
   FIELD2("needsImplicit", needsImplicitCopyConstructor);
   FIELD2("needsOverloadResolution", needsOverloadResolutionForCopyConstructor);
   if (!RD->needsOverloadResolutionForCopyConstructor())
-    FIELD2("defaultedIsDeleted", defaultedCopyConstructorIsDeleted);
+    FIELD2("defaultedIsDeleted", defaultedNonConstCopyConstructorIsDeleted);
+
+  return Ret;
+}
+
+static llvm::json::Object
+createConstCopyConstructorDefinitionData(const CXXRecordDecl *RD) {
+  llvm::json::Object Ret;
+
+  FIELD2("simple", hasSimpleConstCopyConstructor);
+  FIELD2("trivial", hasTrivialConstCopyConstructor);
+  FIELD2("nonTrivial", hasNonTrivialConstCopyConstructor);
+  FIELD2("userDeclared", hasUserDeclaredConstCopyConstructor);
+  FIELD2("hasConstParam", hasConstCopyConstructorWithConstParam);
+  FIELD2("implicitCanExist", implicitConstCopyConstructorCanExist);
+  FIELD2("needsImplicit", needsImplicitCopyConstructor);
+  FIELD2("needsOverloadResolution", needsOverloadResolutionForCopyConstructor);
+  if (!RD->needsOverloadResolutionForCopyConstructor())
+    FIELD2("defaultedIsDeleted", defaultedConstCopyConstructorIsDeleted);
 
   return Ret;
 }
@@ -532,7 +550,8 @@ JSONNodeDumper::createCXXRecordDefinitionData(const CXXRecordDecl *RD) {
   FIELD2("canConstDefaultInit", allowConstDefaultInit);
 
   Ret["defaultCtor"] = createDefaultConstructorDefinitionData(RD);
-  Ret["copyCtor"] = createCopyConstructorDefinitionData(RD);
+  Ret["nonConstCopyCtor"] = createNonConstCopyConstructorDefinitionData(RD);
+  Ret["constCopyCtor"] = createConstCopyConstructorDefinitionData(RD);
   Ret["moveCtor"] = createMoveConstructorDefinitionData(RD);
   Ret["copyAssign"] = createCopyAssignmentDefinitionData(RD);
   Ret["moveAssign"] = createMoveAssignmentDefinitionData(RD);

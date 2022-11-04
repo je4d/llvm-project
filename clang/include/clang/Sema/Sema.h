@@ -4077,7 +4077,8 @@ public:
   /// Kinds of C++ special members.
   enum CXXSpecialMember {
     CXXDefaultConstructor,
-    CXXCopyConstructor,
+    CXXNonConstCopyConstructor,
+    CXXConstCopyConstructor,
     CXXMoveConstructor,
     CXXCopyAssignment,
     CXXMoveAssignment,

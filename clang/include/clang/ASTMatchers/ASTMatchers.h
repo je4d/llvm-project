@@ -7930,8 +7930,12 @@ AST_MATCHER_P(CXXConstructorDecl, forEachConstructorInitializer,
 ///   };
 /// \endcode
 /// cxxConstructorDecl(isCopyConstructor()) will match #2, but not #1 or #3.
-AST_MATCHER(CXXConstructorDecl, isCopyConstructor) {
-  return Node.isCopyConstructor();
+AST_MATCHER(CXXConstructorDecl, isNonConstCopyConstructor) {
+  return Node.isNonConstCopyConstructor();
+}
+
+AST_MATCHER(CXXConstructorDecl, isConstCopyConstructor) {
+  return Node.isConstCopyConstructor();
 }
 
 /// Matches constructor declarations that are move constructors.
