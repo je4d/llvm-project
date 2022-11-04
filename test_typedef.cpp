@@ -1,0 +1,1 @@
+typedef propconst int pint;
