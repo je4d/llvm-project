@@ -7099,7 +7099,7 @@ static Sema::SpecialMemberOverloadResult lookupCallFromSpecialMember(
     Sema &S, CXXRecordDecl *Class, Sema::CXXSpecialMember CSM,
     unsigned FieldQuals, bool ConstRHS) {
   unsigned LHSQuals = 0;
-  if (CSM == Sema::CXXCopyAssignment || CSM == Sema::CXXMoveAssignment)
+  if (CSM == Sema::CXXNonConstCopyConstructor || CSM == Sema::CXXNonConstCopyConstructor || CSM == Sema::CXXCopyAssignment || CSM == Sema::CXXMoveAssignment)
     LHSQuals = FieldQuals;
 
   unsigned RHSQuals = FieldQuals;
@@ -9411,7 +9411,7 @@ bool Sema::ShouldDeleteSpecialMember(CXXMethodDecl *MD, CXXSpecialMember CSM,
   //   operator, an implicitly declared copy constructor or copy assignment
   //   operator is defined as deleted.
   if (MD->isImplicit() &&
-      (CSM == CXXCopyConstructor || CSM == CXXCopyAssignment)) {
+      (CSM == CXXNonConstCopyConstructor || CSM == CXXConstCopyConstructor || CSM == CXXCopyAssignment)) {
     CXXMethodDecl *UserDeclaredMove = nullptr;
 
     // In Microsoft mode up to MSVC 2013, a user-declared move only causes the
@@ -9422,7 +9422,7 @@ bool Sema::ShouldDeleteSpecialMember(CXXMethodDecl *MD, CXXSpecialMember CSM,
         !getLangOpts().isCompatibleWithMSVC(LangOptions::MSVC2015);
 
     if (RD->hasUserDeclaredMoveConstructor() &&
-        (!DeletesOnlyMatchingCopy || CSM == CXXCopyConstructor)) {
+        (!DeletesOnlyMatchingCopy || CSM == CXXNonConstCopyConstructor || CSM == CXXConstCopyConstructor)) {
       if (!Diagnose) return true;
 
       // Find any user-declared move constructor.
@@ -9593,14 +9593,18 @@ static bool findTrivialSpecialMember(Sema &S, CXXRecordDecl *RD,
 
     return false;
 
-  case Sema::CXXCopyConstructor:
+  case Sema::CXXNonConstCopyConstructor:
+  case Sema::CXXConstCopyConstructor:
     // C++11 [class.copy]p12:
     //   A copy constructor is trivial if:
     //    - the constructor selected to copy each direct [subobject] is trivial
-    if (RD->hasTrivialCopyConstructor() ||
+    if (RD->hasTrivialNonConstCopyConstructor() ||
         (TAH == Sema::TAH_ConsiderTrivialABI &&
-         RD->hasTrivialCopyConstructorForCall())) {
+         RD->hasTrivialNonConstCopyConstructorForCall())) {
       if (Quals == Qualifiers::Const)
+        // n.b. quals are the LHS quals here. this is saying if we're initializing a const object, then we don't need overload resolution
+
+
         // We must either select the trivial copy constructor or reach an
         // ambiguity; no need to actually perform overload resolution.
         return true;
@@ -9894,10 +9898,13 @@ bool Sema::SpecialMemberIsTrivial(CXXMethodDecl *MD, CXXSpecialMember CSM,
   //   A [default constructor or destructor] is trivial if
   //    -- all the direct base classes have trivial [default constructors or
   //       destructors]
-  for (const auto &BI : RD->bases())
+  for (const auto &BI : RD->bases()) {
+    // TODO: we may have to map from CXXNonConstCopyConstructor to CXXNonConstCopyConstructor if the base type is const-qualified
+    auto BaseCSM = (CSM == CXXNonConstCopyConstructor && BI.getType().isConstQualified()) ? CXXConstCopyConstructor : CSM;
     if (!checkTrivialSubobjectCall(*this, BI.getBeginLoc(), BI.getType(),
-                                   ConstArg, CSM, TSK_BaseClass, TAH, Diagnose))
+                                   ConstArg, BaseCSM, TSK_BaseClass, TAH, Diagnose))
       return false;
+  }
 
   // C++11 [class.ctor]p5, C++11 [class.dtor]p5:
   //   A copy/move [constructor or assignment operator] for a class X is

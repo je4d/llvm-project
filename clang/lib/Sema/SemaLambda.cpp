@@ -1693,8 +1693,9 @@ bool Sema::CaptureHasSideEffects(const Capture &From) {
 
   const Type *BaseT = T->getBaseElementTypeUnsafe();
   if (const CXXRecordDecl *RD = BaseT->getAsCXXRecordDecl())
-    return !RD->isCompleteDefinition() || !RD->hasTrivialCopyConstructor() ||
-           !RD->hasTrivialDestructor();
+    return !RD->isCompleteDefinition() || !(From.getCaptureType().isConstQualified() ?
+            RD->hasTrivialConstCopyConstructor() : RD->hasTrivialNonConstCopyConstructor())
+           || !RD->hasTrivialDestructor();
 
   return false;
 }
