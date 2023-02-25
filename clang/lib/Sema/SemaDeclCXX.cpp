@@ -9411,7 +9411,7 @@ bool Sema::ShouldDeleteSpecialMember(CXXMethodDecl *MD, CXXSpecialMember CSM,
   //   operator, an implicitly declared copy constructor or copy assignment
   //   operator is defined as deleted.
   if (MD->isImplicit() &&
-      (CSM == CXXCopyConstructor || CSM == CXXCopyAssignment)) {
+      (CSM == CXXNonConstCopyConstructor || CSM == CXXConstCopyConstructor || CSM == CXXCopyAssignment)) {
     CXXMethodDecl *UserDeclaredMove = nullptr;
 
     // In Microsoft mode up to MSVC 2013, a user-declared move only causes the
@@ -9422,7 +9422,7 @@ bool Sema::ShouldDeleteSpecialMember(CXXMethodDecl *MD, CXXSpecialMember CSM,
         !getLangOpts().isCompatibleWithMSVC(LangOptions::MSVC2015);
 
     if (RD->hasUserDeclaredMoveConstructor() &&
-        (!DeletesOnlyMatchingCopy || CSM == CXXCopyConstructor)) {
+        (!DeletesOnlyMatchingCopy || CSM == CXXNonConstCopyConstructor)) {
       if (!Diagnose) return true;
 
       // Find any user-declared move constructor.
@@ -9593,13 +9593,37 @@ static bool findTrivialSpecialMember(Sema &S, CXXRecordDecl *RD,
 
     return false;
 
-  case Sema::CXXCopyConstructor:
+  // XXX I'm not at all sure that what we're doing here is correct.
+  // A const-qualified ctor can call a non-const-qualified ctor. We almost
+  // certainly need overload resolution here.
+  case Sema::CXXNonConstCopyConstructor:
     // C++11 [class.copy]p12:
     //   A copy constructor is trivial if:
     //    - the constructor selected to copy each direct [subobject] is trivial
-    if (RD->hasTrivialCopyConstructor() ||
+    if (RD->hasTrivialNonConstCopyConstructor() ||
         (TAH == Sema::TAH_ConsiderTrivialABI &&
-         RD->hasTrivialCopyConstructorForCall())) {
+         RD->hasTrivialNonConstCopyConstructorForCall())) {
+      if (Quals == Qualifiers::Const)
+        // We must either select the trivial copy constructor or reach an
+        // ambiguity; no need to actually perform overload resolution.
+        return true;
+    } else if (!Selected) {
+      return false;
+    }
+    // In C++98, we are not supposed to perform overload resolution here, but we
+    // treat that as a language defect, as suggested on cxx-abi-dev, to treat
+    // cases like B as having a non-trivial copy constructor:
+    //   struct A { template<typename T> A(T&); };
+    //   struct B { mutable A a; };
+    goto NeedOverloadResolution;
+
+  case Sema::CXXConstCopyConstructor:
+    // C++11 [class.copy]p12:
+    //   A copy constructor is trivial if:
+    //    - the constructor selected to copy each direct [subobject] is trivial
+    if (RD->hasTrivialConstCopyConstructor() ||
+        (TAH == Sema::TAH_ConsiderTrivialABI &&
+         RD->hasTrivialConstCopyConstructorForCall())) {
       if (Quals == Qualifiers::Const)
         // We must either select the trivial copy constructor or reach an
         // ambiguity; no need to actually perform overload resolution.
@@ -9654,7 +9678,7 @@ static bool findTrivialSpecialMember(Sema &S, CXXRecordDecl *RD,
       *Selected = SMOR.getMethod();
 
     if (TAH == Sema::TAH_ConsiderTrivialABI &&
-        (CSM == Sema::CXXCopyConstructor || CSM == Sema::CXXMoveConstructor))
+        (CSM == Sema::CXXNonConstCopyConstructor || CSM == Sema::CXXConstCopyConstructor || CSM == Sema::CXXMoveConstructor))
       return SMOR.getMethod()->isTrivialForCall();
     return SMOR.getMethod()->isTrivial();
   }
@@ -9796,7 +9820,8 @@ static bool checkTrivialClassMembers(Sema &S, CXXRecordDecl *RD,
 void Sema::DiagnoseNontrivial(const CXXRecordDecl *RD, CXXSpecialMember CSM) {
   QualType Ty = Context.getRecordType(RD);
 
-  bool ConstArg = (CSM == CXXCopyConstructor || CSM == CXXCopyAssignment);
+  //XXX not sure this is right. not sure that trivial copy ctors always have const args
+  bool ConstArg = (CSM == CXXNonConstCopyConstructor || CSM == CXXConstCopyConstructor || CSM == CXXCopyAssignment);
   checkTrivialSubobjectCall(*this, RD->getLocation(), Ty, ConstArg, CSM,
                             TSK_CompleteObject, TAH_IgnoreTrivialABI,
                             /*Diagnose*/true);
@@ -9822,7 +9847,8 @@ bool Sema::SpecialMemberIsTrivial(CXXMethodDecl *MD, CXXSpecialMember CSM,
     // Trivial default constructors and destructors cannot have parameters.
     break;
 
-  case CXXCopyConstructor:
+  case CXXNonConstCopyConstructor:
+  case CXXConstCopyConstructor:
   case CXXCopyAssignment: {
     const ParmVarDecl *Param0 = MD->getParamDecl(0);
     const ReferenceType *RT = Param0->getType()->getAs<ReferenceType>();
@@ -10112,8 +10138,9 @@ void Sema::checkIllFormedTrivialABIStruct(CXXRecordDecl &RD) {
     if (RD.isDependentType())
       return true;
     if (RD.needsImplicitCopyConstructor() &&
-        !RD.defaultedCopyConstructorIsDeleted())
+        !RD.defaultedNonConstCopyConstructorIsDeleted())
       return true;
+    // XXX should we consider the const copy ctor here?
     if (RD.needsImplicitMoveConstructor() &&
         !RD.defaultedMoveConstructorIsDeleted())
       return true;
@@ -10253,7 +10280,12 @@ void Sema::AddImplicitlyDeclaredMembersToClass(CXXRecordDecl *ClassDecl) {
       // of it now.
       if (ClassDecl->needsOverloadResolutionForCopyConstructor() ||
           ClassDecl->hasInheritedConstructor())
-        DeclareImplicitCopyConstructor(ClassDecl);
+      {
+        DeclareImplicitCopyConstructor(ClassDecl, 0);
+        if ((!ClassDecl->implicitNonConstCopyConstructorHasConstParam()) && ClassDecl->implicitConstCopyConstructorCanExist())
+          DeclareImplicitCopyConstructor(ClassDecl, Qualifiers::Const);
+      }
+
       // For the MS ABI we need to know whether the copy ctor is deleted. A
       // prerequisite for deleting the implicit copy ctor is that the class has
       // a move ctor or move assignment that is either user-declared or whose
@@ -10264,7 +10296,7 @@ void Sema::AddImplicitlyDeclaredMembersToClass(CXXRecordDecl *ClassDecl) {
                 ClassDecl->needsOverloadResolutionForMoveConstructor() ||
                 ClassDecl->hasUserDeclaredMoveAssignment() ||
                 ClassDecl->needsOverloadResolutionForMoveAssignment()))
-        DeclareImplicitCopyConstructor(ClassDecl);
+        DeclareImplicitCopyConstructor(ClassDecl, 0);
     }
 
     if (getLangOpts().CPlusPlus11 &&
@@ -14483,10 +14515,20 @@ static void diagnoseDeprecatedCopyOperation(Sema &S, CXXMethodDecl *CopyOp) {
   if (RD->hasUserDeclaredDestructor()) {
     UserDeclaredOperation = RD->getDestructor();
   } else if (!isa<CXXConstructorDecl>(CopyOp) &&
-             RD->hasUserDeclaredCopyConstructor()) {
+             RD->hasUserDeclaredNonConstCopyConstructor()) {
     // Find any user-declared copy constructor.
     for (auto *I : RD->ctors()) {
-      if (I->isCopyConstructor()) {
+      if (I->isNonConstCopyConstructor()) {
+        UserDeclaredOperation = I;
+        break;
+      }
+    }
+    assert(UserDeclaredOperation);
+  } else if (!isa<CXXConstructorDecl>(CopyOp) &&
+             RD->hasUserDeclaredConstCopyConstructor()) {
+    // Find any user-declared copy constructor.
+    for (auto *I : RD->ctors()) {
+      if (I->isConstCopyConstructor()) {
         UserDeclaredOperation = I;
         break;
       }
@@ -15098,6 +15140,8 @@ void Sema::DefineImplicitMoveAssignment(SourceLocation CurrentLocation,
 CXXConstructorDecl *Sema::DeclareImplicitCopyConstructor(
                                                     CXXRecordDecl *ClassDecl, unsigned Quals) {
   assert(!(Quals & ~Qualifiers::Const));
+  const bool ConstCtor = (Quals == Qualifiers::Const);
+  const auto CtorType = ConstCtor ? CXXConstCopyConstructor : CXXNonConstCopyConstructor;
   /* TODO: apply Quals to constructor signature */
 
   // C++ [class.copy]p4:
@@ -15105,14 +15149,14 @@ CXXConstructorDecl *Sema::DeclareImplicitCopyConstructor(
   //   constructor, one is declared implicitly.
   assert(ClassDecl->needsImplicitCopyConstructor());
 
-  DeclaringSpecialMember DSM(*this, ClassDecl, CXXCopyConstructor);
+  DeclaringSpecialMember DSM(*this, ClassDecl, CtorType);
   if (DSM.isAlreadyBeingDeclared())
     return nullptr;
 
   QualType ClassType = Context.getTypeDeclType(ClassDecl);
   QualType ArgType = ClassType;
-  bool Const = (Quals & Qualifiers::Const) || ClassDecl->implicitNonConstCopyConstructorHasConstParam();
-  if (Const)
+  bool ConstArg = ConstCtor || ClassDecl->implicitNonConstCopyConstructorHasConstParam();
+  if (ConstArg)
     ArgType = ArgType.withConst();
 
   LangAS AS = getDefaultCXXMethodAddrSpace();
@@ -15122,8 +15166,8 @@ CXXConstructorDecl *Sema::DeclareImplicitCopyConstructor(
   ArgType = Context.getLValueReferenceType(ArgType);
 
   bool Constexpr = defaultedSpecialMemberIsConstexpr(*this, ClassDecl,
-                                                     CXXCopyConstructor,
-                                                     Const);
+                                                     CtorType,
+                                                     ConstArg);
 
   DeclarationName Name
     = Context.DeclarationNames.getCXXConstructorName(
@@ -15146,9 +15190,9 @@ CXXConstructorDecl *Sema::DeclareImplicitCopyConstructor(
   setupImplicitSpecialMemberType(CopyConstructor, Context.VoidTy, ArgType);
 
   if (getLangOpts().CUDA)
-    inferCUDATargetForImplicitSpecialMember(ClassDecl, CXXCopyConstructor,
+    inferCUDATargetForImplicitSpecialMember(ClassDecl, CtorType,
                                             CopyConstructor,
-                                            /* ConstRHS */ Const,
+                                            /* ConstRHS */ ConstArg,
                                             /* Diagnose */ false);
 
   // During template instantiation of special member functions we need a
@@ -15167,15 +15211,19 @@ CXXConstructorDecl *Sema::DeclareImplicitCopyConstructor(
 
   CopyConstructor->setTrivial(
       ClassDecl->needsOverloadResolutionForCopyConstructor()
-          ? SpecialMemberIsTrivial(CopyConstructor, CXXCopyConstructor)
-          : ClassDecl->hasTrivialCopyConstructor());
+          ? SpecialMemberIsTrivial(CopyConstructor, CtorType)
+          : (ConstCtor
+            ? ClassDecl->hasTrivialConstCopyConstructor()
+            : ClassDecl->hasTrivialNonConstCopyConstructor()));
 
   CopyConstructor->setTrivialForCall(
       ClassDecl->hasAttr<TrivialABIAttr>() ||
       (ClassDecl->needsOverloadResolutionForCopyConstructor()
-           ? SpecialMemberIsTrivial(CopyConstructor, CXXCopyConstructor,
+           ? SpecialMemberIsTrivial(CopyConstructor, CtorType,
              TAH_ConsiderTrivialABI)
-           : ClassDecl->hasTrivialCopyConstructorForCall()));
+           : (ConstCtor
+            ? ClassDecl->hasTrivialConstCopyConstructorForCall()
+            : ClassDecl->hasTrivialNonConstCopyConstructorForCall())));
 
   // Note that we have declared this constructor.
   ++getASTContext().NumImplicitCopyConstructorsDeclared;
@@ -15183,8 +15231,11 @@ CXXConstructorDecl *Sema::DeclareImplicitCopyConstructor(
   Scope *S = getScopeForContext(ClassDecl);
   CheckImplicitSpecialMemberDeclaration(S, CopyConstructor);
 
-  if (ShouldDeleteSpecialMember(CopyConstructor, CXXCopyConstructor)) {
-    ClassDecl->setImplicitCopyConstructorIsDeleted();
+  if (ShouldDeleteSpecialMember(CopyConstructor, CtorType)) {
+    if (ConstCtor)
+      ClassDecl->setImplicitConstCopyConstructorIsDeleted();
+    else
+      ClassDecl->setImplicitNonConstCopyConstructorIsDeleted();
     SetDeclDeleted(CopyConstructor, ClassLoc);
   }
 
@@ -15197,8 +15248,10 @@ CXXConstructorDecl *Sema::DeclareImplicitCopyConstructor(
 
 void Sema::DefineImplicitCopyConstructor(SourceLocation CurrentLocation,
                                          CXXConstructorDecl *CopyConstructor) {
+  // XXX really need to implement something here
   assert((CopyConstructor->isDefaulted() &&
-          CopyConstructor->isCopyConstructor() &&
+          (CopyConstructor->isNonConstCopyConstructor() ||
+           CopyConstructor->isConstCopyConstructor()) &&
           !CopyConstructor->doesThisDeclarationHaveABody() &&
           !CopyConstructor->isDeleted()) &&
          "DefineImplicitCopyConstructor - call it for implicit copy ctor");

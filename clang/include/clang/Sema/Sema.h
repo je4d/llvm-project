@@ -6358,7 +6358,7 @@ public:
   /// copy constructor will be added.
   ///
   /// \returns The implicitly-declared copy constructor.
-  CXXConstructorDecl *DeclareImplicitCopyConstructor(CXXRecordDecl *ClassDecl);
+  CXXConstructorDecl *DeclareImplicitCopyConstructor(CXXRecordDecl *ClassDecl, unsigned Quals);
 
   /// DefineImplicitCopyConstructor - Checks for feasibility of
   /// defining this constructor as the copy constructor.

@@ -1001,7 +1001,11 @@ void Sema::ForceDeclarationOfImplicitMembers(CXXRecordDecl *Class) {
 
   // If the copy constructor has not yet been declared, do so now.
   if (Class->needsImplicitCopyConstructor())
-    DeclareImplicitCopyConstructor(Class);
+  {
+    DeclareImplicitCopyConstructor(Class, 0);
+    if (!Class->implicitNonConstCopyConstructorHasConstParam())
+      DeclareImplicitCopyConstructor(Class, Qualifiers::Const);
+  }
 
   // If the copy assignment operator has not yet been declared, do so now.
   if (Class->needsImplicitCopyAssignment())
@@ -1056,8 +1060,11 @@ static void DeclareImplicitMemberFunctionsWithName(Sema &S,
         CXXRecordDecl *Class = const_cast<CXXRecordDecl *>(Record);
         if (Record->needsImplicitDefaultConstructor())
           S.DeclareImplicitDefaultConstructor(Class);
-        if (Record->needsImplicitCopyConstructor())
-          S.DeclareImplicitCopyConstructor(Class);
+        if (Record->needsImplicitCopyConstructor()) {
+          S.DeclareImplicitCopyConstructor(Class, 0);
+          if (!Record->implicitNonConstCopyConstructorHasConstParam())
+            S.DeclareImplicitCopyConstructor(Class, Qualifiers::Const);
+        }
         if (S.getLangOpts().CPlusPlus11 &&
             Record->needsImplicitMoveConstructor())
           S.DeclareImplicitMoveConstructor(Class);
@@ -3382,11 +3389,13 @@ Sema::SpecialMemberOverloadResult Sema::LookupSpecialMember(CXXRecordDecl *RD,
       });
     }
   } else {
-    if (SM == CXXCopyConstructor || SM == CXXMoveConstructor) {
+    if (SM == CXXNonConstCopyConstructor || SM == CXXConstCopyConstructor || SM == CXXMoveConstructor) {
       Name = Context.DeclarationNames.getCXXConstructorName(CanTy);
       if (RD->needsImplicitCopyConstructor()) {
         runWithSufficientStackSpace(RD->getLocation(), [&] {
-          DeclareImplicitCopyConstructor(RD);
+          DeclareImplicitCopyConstructor(RD, 0);
+          if (!RD->implicitNonConstCopyConstructorHasConstParam())
+            DeclareImplicitCopyConstructor(RD, Qualifiers::Const);
         });
       }
       if (getLangOpts().CPlusPlus11 && RD->needsImplicitMoveConstructor()) {
@@ -3420,7 +3429,7 @@ Sema::SpecialMemberOverloadResult Sema::LookupSpecialMember(CXXRecordDecl *RD,
     // Possibly an XValue is actually correct in the case of move, but
     // there is no semantic difference for class types in this restricted
     // case.
-    if (SM == CXXCopyConstructor || SM == CXXCopyAssignment)
+    if (SM == CXXNonConstCopyConstructor || SM == CXXConstCopyConstructor || SM == CXXCopyAssignment)
       VK = VK_LValue;
     else
       VK = VK_PRValue;
@@ -3539,6 +3548,10 @@ CXXConstructorDecl *Sema::LookupDefaultConstructor(CXXRecordDecl *Class) {
 /// Look up the copying constructor for the given class.
 CXXConstructorDecl *Sema::LookupCopyingConstructor(CXXRecordDecl *Class,
                                                    unsigned Quals) {
+  // FIXME: Appears to only be called for MS CXX ABI, skipping for now
+  std::terminate();
+  return nullptr;
+  /*
   assert(!(Quals & ~(Qualifiers::Const | Qualifiers::Volatile)) &&
          "non-const, non-volatile qualifiers for copy ctor arg");
   SpecialMemberOverloadResult Result =
@@ -3546,6 +3559,7 @@ CXXConstructorDecl *Sema::LookupCopyingConstructor(CXXRecordDecl *Class,
                         Quals & Qualifiers::Volatile, false, false, false);
 
   return cast_or_null<CXXConstructorDecl>(Result.getMethod());
+  */
 }
 
 /// Look up the moving constructor for the given class.

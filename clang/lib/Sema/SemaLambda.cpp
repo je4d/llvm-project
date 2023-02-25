@@ -1692,8 +1692,9 @@ bool Sema::CaptureHasSideEffects(const Capture &From) {
     return true;
 
   const Type *BaseT = T->getBaseElementTypeUnsafe();
+  // FIXME: should consider mutability of lambda
   if (const CXXRecordDecl *RD = BaseT->getAsCXXRecordDecl())
-    return !RD->isCompleteDefinition() || !RD->hasTrivialCopyConstructor() ||
+    return !RD->isCompleteDefinition() || !RD->hasTrivialNonConstCopyConstructor() || RD->hasNonTrivialConstCopyConstructor() ||
            !RD->hasTrivialDestructor();
 
   return false;
