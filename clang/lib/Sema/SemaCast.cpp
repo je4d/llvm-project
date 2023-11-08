@@ -1820,14 +1820,14 @@ TryStaticMemberPointerUpcast(Sema &Self, ExprResult &SrcExpr, QualType SrcType,
     assert(StillOkay);
     (void)StillOkay;
     std::string PathDisplayStr = Self.getAmbiguousPathsDisplayString(Paths);
-    Self.Diag(OpRange.getBegin(), diag::err_ambiguous_memptr_conv)
+    Self.Diag(OpRange.getBegin(), diag::err_ambiguous_memptr_class_conv)
       << 1 << SrcClass << DestClass << PathDisplayStr << OpRange;
     msg = 0;
     return TC_Failed;
   }
 
   if (const RecordType *VBase = Paths.getDetectedVirtual()) {
-    Self.Diag(OpRange.getBegin(), diag::err_memptr_conv_via_virtual)
+    Self.Diag(OpRange.getBegin(), diag::err_memptr_class_conv_via_virtual)
       << SrcClass << DestClass << QualType(VBase, 0) << OpRange;
     msg = 0;
     return TC_Failed;

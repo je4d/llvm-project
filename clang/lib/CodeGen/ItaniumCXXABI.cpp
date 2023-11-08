@@ -881,7 +881,8 @@ llvm::Value *
 ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
                                            const CastExpr *E,
                                            llvm::Value *src) {
-  assert(E->getCastKind() == CK_DerivedToBaseMemberPointer ||
+  assert(E->getCastKind() == CK_DerivedToBaseMemberPointee ||
+         E->getCastKind() == CK_DerivedToBaseMemberPointer ||
          E->getCastKind() == CK_BaseToDerivedMemberPointer ||
          E->getCastKind() == CK_ReinterpretMemberPointer);
 
@@ -896,7 +897,9 @@ ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
   if (!adj) return src;
 
   CGBuilderTy &Builder = CGF.Builder;
-  bool isDerivedToBase = (E->getCastKind() == CK_DerivedToBaseMemberPointer);
+  bool isDerivedToBase = (E->getCastKind() == CK_DerivedToBaseMemberPointee ||
+                          E->getCastKind() == CK_DerivedToBaseMemberPointer);
+  bool isPointeeConv   = E->getCastKind() == CK_DerivedToBaseMemberPointee;
 
   const MemberPointerType *destTy =
     E->getType()->castAs<MemberPointerType>();
@@ -905,7 +908,7 @@ ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
   // offset if the source is non-null.
   if (destTy->isMemberDataPointer()) {
     llvm::Value *dst;
-    if (isDerivedToBase)
+    if (isDerivedToBase ^ isPointeeConv)
       dst = Builder.CreateNSWSub(src, adj, "adj");
     else
       dst = Builder.CreateNSWAdd(src, adj, "adj");
@@ -925,7 +928,7 @@ ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
 
   llvm::Value *srcAdj = Builder.CreateExtractValue(src, 1, "src.adj");
   llvm::Value *dstAdj;
-  if (isDerivedToBase)
+  if (isDerivedToBase ^ isPointeeConv)
     dstAdj = Builder.CreateNSWSub(srcAdj, adj, "adj");
   else
     dstAdj = Builder.CreateNSWAdd(srcAdj, adj, "adj");
@@ -936,7 +939,8 @@ ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
 llvm::Constant *
 ItaniumCXXABI::EmitMemberPointerConversion(const CastExpr *E,
                                            llvm::Constant *src) {
-  assert(E->getCastKind() == CK_DerivedToBaseMemberPointer ||
+  assert(E->getCastKind() == CK_DerivedToBaseMemberPointee ||
+         E->getCastKind() == CK_DerivedToBaseMemberPointer ||
          E->getCastKind() == CK_BaseToDerivedMemberPointer ||
          E->getCastKind() == CK_ReinterpretMemberPointer);
 
@@ -947,7 +951,9 @@ ItaniumCXXABI::EmitMemberPointerConversion(const CastExpr *E,
   llvm::Constant *adj = getMemberPointerAdjustment(E);
   if (!adj) return src;
 
-  bool isDerivedToBase = (E->getCastKind() == CK_DerivedToBaseMemberPointer);
+  bool isDerivedToBase = (E->getCastKind() == CK_DerivedToBaseMemberPointee ||
+                          E->getCastKind() == CK_DerivedToBaseMemberPointer);
+  bool isPointeeConv   = E->getCastKind() == CK_DerivedToBaseMemberPointee;
 
   const MemberPointerType *destTy =
     E->getType()->castAs<MemberPointerType>();
@@ -958,7 +964,7 @@ ItaniumCXXABI::EmitMemberPointerConversion(const CastExpr *E,
     // null maps to null.
     if (src->isAllOnesValue()) return src;
 
-    if (isDerivedToBase)
+    if (isDerivedToBase ^ isPointeeConv)
       return llvm::ConstantExpr::getNSWSub(src, adj);
     else
       return llvm::ConstantExpr::getNSWAdd(src, adj);
@@ -973,7 +979,7 @@ ItaniumCXXABI::EmitMemberPointerConversion(const CastExpr *E,
 
   llvm::Constant *srcAdj = src->getAggregateElement(1);
   llvm::Constant *dstAdj;
-  if (isDerivedToBase)
+  if (isDerivedToBase ^ isPointeeConv)
     dstAdj = llvm::ConstantExpr::getNSWSub(srcAdj, adj);
   else
     dstAdj = llvm::ConstantExpr::getNSWAdd(srcAdj, adj);

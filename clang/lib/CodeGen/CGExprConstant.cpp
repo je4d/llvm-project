@@ -1164,6 +1164,7 @@ public:
       llvm_unreachable("builtin functions are handled elsewhere");
 
     case CK_ReinterpretMemberPointer:
+    case CK_DerivedToBaseMemberPointee:
     case CK_DerivedToBaseMemberPointer:
     case CK_BaseToDerivedMemberPointer: {
       auto C = Emitter.tryEmitPrivate(subExpr, subExpr->getType());

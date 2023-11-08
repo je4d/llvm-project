@@ -3863,8 +3863,11 @@ public:
                                  bool InOverloadResolution,
                                  QualType &ConvertedType);
   bool CheckMemberPointerConversion(Expr *From, QualType ToType,
-                                    CastKind &Kind,
-                                    CXXCastPath &BasePath,
+                                    QualType &MidType,
+                                    CastKind &PointeeKind,
+                                    CastKind &ClassKind,
+                                    CXXCastPath &PointeeBasePath,
+                                    CXXCastPath &ClassBasePath,
                                     bool IgnoreBaseAccess);
   bool IsQualificationConversion(QualType FromType, QualType ToType,
                                  bool CStyle, bool &ObjCLifetimeConversion);

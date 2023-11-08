@@ -4577,22 +4577,32 @@ Sema::PerformImplicitConversion(Expr *From, QualType ToType,
   }
 
   case ICK_Pointer_Member: {
-    CastKind Kind;
-    CXXCastPath BasePath;
-    if (CheckMemberPointerConversion(From, ToType, Kind, BasePath, CStyle))
+    QualType ToType = SCS.getToType(1);
+    QualType MidType;
+    CastKind PointeeKind = CK_NoOp;
+    CastKind ClassKind = CK_NoOp;
+    CXXCastPath PointeeBasePath;
+    CXXCastPath ClassBasePath;
+    if (CheckMemberPointerConversion(From, ToType, MidType, PointeeKind,
+                                     ClassKind, PointeeBasePath, ClassBasePath,
+                                     CStyle))
       return ExprError();
     if (CheckExceptionSpecCompatibility(From, ToType))
       return ExprError();
 
     // We may not have been able to figure out what this member pointer resolved
-    // to up until this exact point.  Attempt to lock-in it's inheritance model.
+    // to up until this exact point.  Attempt to lock-in its inheritance model.
     if (Context.getTargetInfo().getCXXABI().isMicrosoft()) {
       (void)isCompleteType(From->getExprLoc(), From->getType());
       (void)isCompleteType(From->getExprLoc(), ToType);
     }
 
-    From =
-        ImpCastExprToType(From, ToType, Kind, VK_PRValue, &BasePath, CCK).get();
+    if (PointeeKind != CK_NoOp)
+      From = ImpCastExprToType(From, MidType, PointeeKind, VK_PRValue,
+                               &PointeeBasePath, CCK).get();
+    if (ClassKind != CK_NoOp)
+      From = ImpCastExprToType(From, ToType, ClassKind, VK_PRValue,
+                               &ClassBasePath, CCK).get();
     break;
   }
 

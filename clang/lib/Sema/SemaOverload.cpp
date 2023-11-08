@@ -3350,19 +3350,41 @@ bool Sema::IsMemberPointerConversion(Expr *From, QualType FromType,
   if (!FromTypePtr)
     return false;
 
-  // A pointer to member of B can be converted to a pointer to member of D,
-  // where D is derived from B (C++ 4.11p2).
+  // A pointer to member of B1 of type D2 can be converted to a pointer to
+  // member of D1 of type B2, where B1 and B2 are the same as or base classes
+  // of D1 and D2, respectively, and at least one of B1 or B2 is a base class
+  // of D1 or D2, respectively (C++ 4.11p2).
+  QualType FromPointee(FromTypePtr->getPointeeType());
+  QualType ToPointee(ToTypePtr->getPointeeType());
   QualType FromClass(FromTypePtr->getClass(), 0);
   QualType ToClass(ToTypePtr->getClass(), 0);
 
-  if (!Context.hasSameUnqualifiedType(FromClass, ToClass) &&
-      IsDerivedFrom(From->getBeginLoc(), ToClass, FromClass)) {
-    ConvertedType = Context.getMemberPointerType(FromTypePtr->getPointeeType(),
-                                                 ToClass.getTypePtr());
-    return true;
-  }
+  bool PointeeIsSame = Context.hasSameUnqualifiedType(FromPointee, ToPointee);
+  bool ClassIsSame = Context.hasSameUnqualifiedType(FromClass, ToClass);
 
-  return false;
+  if (PointeeIsSame && ClassIsSame)
+    return false;
+
+  bool ClassIsDerived = IsDerivedFrom(From->getBeginLoc(), ToClass, FromClass);
+
+  if (!(ClassIsSame || ClassIsDerived))
+    return false;
+
+  bool PointeeIsDerived =
+      getLangOpts().CPlusPlus26 &&
+      IsDerivedFrom(From->getBeginLoc(), FromPointee, ToPointee);
+
+  if (!(ClassIsDerived || PointeeIsDerived))
+    return false;
+
+  QualType convertedPointeeType =
+      PointeeIsDerived
+          ? QualType(ToPointee.getTypePtr(), FromPointee.getCVRQualifiers())
+          : FromTypePtr->getPointeeType();
+
+  ConvertedType =
+      Context.getMemberPointerType(convertedPointeeType, ToClass.getTypePtr());
+  return true;
 }
 
 /// CheckMemberPointerConversion - Check the member pointer conversion from the
@@ -3372,8 +3394,11 @@ bool Sema::IsMemberPointerConversion(Expr *From, QualType FromType,
 /// true and produces a diagnostic if there was an error, or returns false
 /// otherwise.
 bool Sema::CheckMemberPointerConversion(Expr *From, QualType ToType,
-                                        CastKind &Kind,
-                                        CXXCastPath &BasePath,
+                                        QualType &MidType,
+                                        CastKind &PointeeKind,
+                                        CastKind &ClassKind,
+                                        CXXCastPath &PointeeBasePath,
+                                        CXXCastPath &ClassBasePath,
                                         bool IgnoreBaseAccess) {
   QualType FromType = From->getType();
   const MemberPointerType *FromPtrType = FromType->getAs<MemberPointerType>();
@@ -3382,7 +3407,8 @@ bool Sema::CheckMemberPointerConversion(Expr *From, QualType ToType,
     assert(From->isNullPointerConstant(Context,
                                        Expr::NPC_ValueDependentIsNull) &&
            "Expr must be null pointer constant!");
-    Kind = CK_NullToMemberPointer;
+    PointeeKind = CK_NullToMemberPointer;
+    MidType = ToType;
     return false;
   }
 
@@ -3390,44 +3416,94 @@ bool Sema::CheckMemberPointerConversion(Expr *From, QualType ToType,
   assert(ToPtrType && "No member pointer cast has a target type "
                       "that is not a member pointer.");
 
-  QualType FromClass = QualType(FromPtrType->getClass(), 0);
-  QualType ToClass   = QualType(ToPtrType->getClass(), 0);
+  QualType FromPointee = FromPtrType->getPointeeType();
+  QualType ToPointee   = ToPtrType->getPointeeType();
+  QualType FromClass   = QualType(FromPtrType->getClass(), 0);
+  QualType ToClass     = QualType(ToPtrType->getClass(), 0);
+
+  bool PointeeIsSame = Context.hasSameUnqualifiedType(FromPointee, ToPointee);
+  bool ClassIsSame = Context.hasSameUnqualifiedType(FromClass, ToClass);
+
+  if (!PointeeIsSame /*&& FromPointee->isRecordType() &&
+      ToPointee->isRecordType()*/) {
+    assert(FromPointee->isRecordType() && "Pointer to non-class.");
+    assert(ToPointee->isRecordType() && "Pointer to non-class.");
+
+    CXXBasePaths PointeePaths(/*FindAmbiguities=*/true, /*RecordPaths=*/true,
+                              /*DetectVirtual=*/true);
+    bool PointeeDerivationOkay = IsDerivedFrom(From->getBeginLoc(), FromPointee,
+                                               ToPointee, PointeePaths);
+
+    assert(PointeeDerivationOkay &&
+           "Should not have been called if pointee derivation isn't OK.");
+    (void)PointeeDerivationOkay;
+
+    if (PointeePaths.isAmbiguous(Context.getCanonicalType(ToPointee))) {
+      std::string PathDisplayStr = getAmbiguousPathsDisplayString(PointeePaths);
+      Diag(From->getExprLoc(), diag::err_ambiguous_memptr_pointee_conv)
+          << 0 << FromPointee << ToPointee << PathDisplayStr
+          << From->getSourceRange();
+      return true;
+    }
+
+    if (const RecordType *VBase = PointeePaths.getDetectedVirtual()) {
+      Diag(From->getExprLoc(), diag::err_memptr_pointee_conv_via_virtual)
+          << FromPointee << ToPointee << QualType(VBase, 0)
+          << From->getSourceRange();
+      return true;
+    }
+    if (!IgnoreBaseAccess) {
+      CheckBaseClassAccess(From->getExprLoc(), ToPointee, FromPointee,
+                           PointeePaths.front(),
+                           diag::err_upcast_to_inaccessible_base);
+    }
+    BuildBasePathArray(PointeePaths, PointeeBasePath);
+    PointeeKind = CK_DerivedToBaseMemberPointee;
+  }
+
+  MidType = Context.getMemberPointerType(ToPointee, FromClass.getTypePtr());
 
   // FIXME: What about dependent types?
   assert(FromClass->isRecordType() && "Pointer into non-class.");
   assert(ToClass->isRecordType() && "Pointer into non-class.");
 
-  CXXBasePaths Paths(/*FindAmbiguities=*/true, /*RecordPaths=*/true,
-                     /*DetectVirtual=*/true);
-  bool DerivationOkay =
-      IsDerivedFrom(From->getBeginLoc(), ToClass, FromClass, Paths);
-  assert(DerivationOkay &&
-         "Should not have been called if derivation isn't OK.");
-  (void)DerivationOkay;
+  if (!ClassIsSame) {
 
-  if (Paths.isAmbiguous(Context.getCanonicalType(FromClass).
-                                  getUnqualifiedType())) {
-    std::string PathDisplayStr = getAmbiguousPathsDisplayString(Paths);
-    Diag(From->getExprLoc(), diag::err_ambiguous_memptr_conv)
-      << 0 << FromClass << ToClass << PathDisplayStr << From->getSourceRange();
-    return true;
+    CXXBasePaths ClassPaths(/*FindAmbiguities=*/true, /*RecordPaths=*/true,
+                            /*DetectVirtual=*/true);
+    bool ClassDerivationOkay =
+        IsDerivedFrom(From->getBeginLoc(), ToClass, FromClass, ClassPaths);
+
+    assert((ClassIsSame || ClassDerivationOkay) &&
+           "Should not have been called if class derivation isn't OK.");
+    (void)ClassDerivationOkay;
+
+    if (ClassPaths.isAmbiguous(Context.getCanonicalType(FromClass))) {
+      std::string PathDisplayStr = getAmbiguousPathsDisplayString(ClassPaths);
+      Diag(From->getExprLoc(), diag::err_ambiguous_memptr_class_conv)
+          << 0 << FromClass << ToClass << PathDisplayStr
+          << From->getSourceRange();
+      return true;
+    }
+
+    if (const RecordType *VBase = ClassPaths.getDetectedVirtual()) {
+      Diag(From->getExprLoc(), diag::err_memptr_class_conv_via_virtual)
+          << FromClass << ToClass << QualType(VBase, 0)
+          << From->getSourceRange();
+      return true;
+    }
+    if (!IgnoreBaseAccess) {
+      CheckBaseClassAccess(From->getExprLoc(), FromClass, ToClass,
+                           ClassPaths.front(),
+                           diag::err_downcast_from_inaccessible_base);
+    }
+    BuildBasePathArray(ClassPaths, ClassBasePath);
+    ClassKind = CK_BaseToDerivedMemberPointer;
   }
 
-  if (const RecordType *VBase = Paths.getDetectedVirtual()) {
-    Diag(From->getExprLoc(), diag::err_memptr_conv_via_virtual)
-      << FromClass << ToClass << QualType(VBase, 0)
-      << From->getSourceRange();
-    return true;
-  }
+  assert((!PointeeIsSame || !ClassIsSame) &&
+         "Should not have been called if nothing's changed.");
 
-  if (!IgnoreBaseAccess)
-    CheckBaseClassAccess(From->getExprLoc(), FromClass, ToClass,
-                         Paths.front(),
-                         diag::err_downcast_from_inaccessible_base);
-
-  // Must be a base to derived member conversion.
-  BuildBasePathArray(Paths, BasePath);
-  Kind = CK_BaseToDerivedMemberPointer;
   return false;
 }
 

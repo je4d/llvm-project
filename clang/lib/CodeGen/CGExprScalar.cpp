@@ -2296,6 +2296,7 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
   }
 
   case CK_ReinterpretMemberPointer:
+  case CK_DerivedToBaseMemberPointee:
   case CK_BaseToDerivedMemberPointer:
   case CK_DerivedToBaseMemberPointer: {
     Value *Src = Visit(E);

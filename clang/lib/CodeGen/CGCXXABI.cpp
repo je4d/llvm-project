@@ -275,20 +275,29 @@ llvm::Value *CGCXXABI::readArrayCookieImpl(CodeGenFunction &CGF,
 /// member-pointer operation.  Returns null if no adjustment is
 /// required.
 llvm::Constant *CGCXXABI::getMemberPointerAdjustment(const CastExpr *E) {
-  assert(E->getCastKind() == CK_DerivedToBaseMemberPointer ||
+  assert(E->getCastKind() == CK_DerivedToBaseMemberPointee ||
+         E->getCastKind() == CK_DerivedToBaseMemberPointer ||
          E->getCastKind() == CK_BaseToDerivedMemberPointer);
 
   QualType derivedType;
-  if (E->getCastKind() == CK_DerivedToBaseMemberPointer)
+  if (E->getCastKind() == CK_DerivedToBaseMemberPointee ||
+      E->getCastKind() == CK_DerivedToBaseMemberPointer)
     derivedType = E->getSubExpr()->getType();
   else
     derivedType = E->getType();
 
-  const CXXRecordDecl *derivedClass =
-    derivedType->castAs<MemberPointerType>()->getClass()->getAsCXXRecordDecl();
+  const MemberPointerType *memPtrType =
+      derivedType->castAs<MemberPointerType>();
 
-  return CGM.GetNonVirtualBaseClassOffset(derivedClass,
-                                          E->path_begin(),
+  const CXXRecordDecl *derivedClass = nullptr;
+
+  if (E->getCastKind() == CK_DerivedToBaseMemberPointee)
+    derivedClass =
+        memPtrType->getPointeeType().getTypePtr()->getAsCXXRecordDecl();
+  else
+    derivedClass = memPtrType->getClass()->getAsCXXRecordDecl();
+
+  return CGM.GetNonVirtualBaseClassOffset(derivedClass, E->path_begin(),
                                           E->path_end());
 }
 

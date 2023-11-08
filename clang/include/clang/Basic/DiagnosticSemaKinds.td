@@ -9299,14 +9299,21 @@ def warn_inaccessible_base_class : Warning<
 // FIXME: better way to display derivation?  Pass entire thing into diagclient?
 def err_ambiguous_derived_to_base_conv : Error<
   "ambiguous conversion from derived class %0 to base class %1:%2">;
-def err_ambiguous_memptr_conv : Error<
+def err_ambiguous_memptr_pointee_conv : Error<
+  "ambiguous conversion from pointer to member of type %1 "
+  "(%select{derived|base}0 class) to pointer to member of type %2 "
+  "(%select{base|derived}0 class):%3">;
+def err_ambiguous_memptr_class_conv : Error<
   "ambiguous conversion from pointer to member of %select{base|derived}0 "
   "class %1 to pointer to member of %select{derived|base}0 class %2:%3">;
 def ext_ms_ambiguous_direct_base : ExtWarn<
   "accessing inaccessible direct base %0 of %1 is a Microsoft extension">,
   InGroup<MicrosoftInaccessibleBase>;
 
-def err_memptr_conv_via_virtual : Error<
+def err_memptr_pointee_conv_via_virtual : Error<
+  "conversion from pointer to member of type %0 to pointer to member "
+  "of type %1 via virtual base %2 is not allowed">;
+def err_memptr_class_conv_via_virtual : Error<
   "conversion from pointer to member of class %0 to pointer to member "
   "of class %1 via virtual base %2 is not allowed">;
 

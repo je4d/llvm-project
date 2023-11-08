@@ -1053,6 +1053,7 @@ static bool rewriteToNumericBoxedExpression(const ObjCMessageExpr *Msg,
     case CK_FunctionToPointerDecay:
     case CK_NullToPointer:
     case CK_NullToMemberPointer:
+    case CK_DerivedToBaseMemberPointee:
     case CK_BaseToDerivedMemberPointer:
     case CK_DerivedToBaseMemberPointer:
     case CK_MemberPointerToBoolean:

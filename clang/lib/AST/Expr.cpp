@@ -1800,6 +1800,7 @@ bool CastExpr::CastConsistency() const {
   case CK_DerivedToBase:
   case CK_UncheckedDerivedToBase:
   case CK_DerivedToBaseMemberPointer:
+  case CK_DerivedToBaseMemberPointee:
   case CK_BaseToDerived:
   case CK_BaseToDerivedMemberPointer:
     assert(!path_empty() && "Cast kind should have a base path!");
