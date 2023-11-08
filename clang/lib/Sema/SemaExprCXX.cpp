@@ -1637,8 +1637,8 @@ Sema::BuildCXXTypeConstructExpr(TypeSourceInfo *TInfo,
                            ? SourceRange()
                            : SourceRange(LParenOrBraceLoc, RParenOrBraceLoc);
     Result = CXXFunctionalCastExpr::Create(
-        Context, ResultType, Expr::getValueKindForType(Ty), TInfo, CK_NoOp,
-        Result.get(), /*Path=*/nullptr, CurFPFeatureOverrides(),
+        Context, ResultType, Expr::getValueKindForType(Ty), CK_NoOp,
+        Result.get(), /*Path=*/nullptr, TInfo, CurFPFeatureOverrides(),
         Locs.getBegin(), Locs.getEnd());
   }
 

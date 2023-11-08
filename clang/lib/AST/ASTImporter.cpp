@@ -7793,8 +7793,8 @@ ExpectedStmt ASTNodeImporter::VisitExplicitCastExpr(ExplicitCastExpr *E) {
     if (!ToRParenLocOrErr)
       return ToRParenLocOrErr.takeError();
     return CXXFunctionalCastExpr::Create(
-        Importer.getToContext(), ToType, E->getValueKind(), ToTypeInfoAsWritten,
-        E->getCastKind(), ToSubExpr, ToBasePath, FCE->getFPFeatures(),
+        Importer.getToContext(), ToType, E->getValueKind(), E->getCastKind(),
+        ToSubExpr, ToBasePath, ToTypeInfoAsWritten, FCE->getFPFeatures(),
         *ToLParenLocOrErr, *ToRParenLocOrErr);
   }
 

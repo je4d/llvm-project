@@ -3386,6 +3386,6 @@ ExprResult Sema::BuildCXXFunctionalCastExpr(TypeSourceInfo *CastTypeInfo,
   DiagnoseCastQual(Op.Self, Op.SrcExpr, Op.DestType);
 
   return Op.complete(CXXFunctionalCastExpr::Create(
-      Context, Op.ResultType, Op.ValueKind, CastTypeInfo, Op.Kind,
-      Op.SrcExpr.get(), &Op.BasePath, CurFPFeatureOverrides(), LPLoc, RPLoc));
+      Context, Op.ResultType, Op.ValueKind, Op.Kind, Op.SrcExpr.get(),
+      &Op.BasePath, CastTypeInfo, CurFPFeatureOverrides(), LPLoc, RPLoc));
 }

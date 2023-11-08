@@ -1829,8 +1829,8 @@ public:
 
   static CXXFunctionalCastExpr *
   Create(const ASTContext &Context, QualType T, ExprValueKind VK,
-         TypeSourceInfo *Written, CastKind Kind, Expr *Op,
-         const CXXCastPath *Path, FPOptionsOverride FPO, SourceLocation LPLoc,
+         CastKind Kind, Expr *Op, const CXXCastPath *Path,
+         TypeSourceInfo *Written, FPOptionsOverride FPO, SourceLocation LPLoc,
          SourceLocation RPLoc);
   static CXXFunctionalCastExpr *
   CreateEmpty(const ASTContext &Context, unsigned PathSize, bool HasFPFeatures);
