@@ -658,13 +658,13 @@ class LLVMConfig(object):
         # https://discourse.llvm.org/t/lit-run-a-run-line-multiple-times-with-different-replacements/64932
         # has a solution, provide substitutions to conveniently try every standard with LIT_CLANG_STD_GROUP.
         clang_std_group = int(os.environ.get("LIT_CLANG_STD_GROUP", "0"))
-        clang_std_values = ("98", "11", "14", "17", "20", "2b")
+        clang_std_values = ("98", "11", "14", "17", "20", "23", "26")
 
         def add_std_cxx(s):
             t = s[8:]
             if t.endswith("-"):
                 t += clang_std_values[-1]
-            l = clang_std_values.index(t[0:2] if t[0:2] != "23" else "2b")
+            l = clang_std_values.index(t[0:2] if t[0:2] != "29" else "2d")
             h = clang_std_values.index(t[3:5])
             # Let LIT_CLANG_STD_GROUP=0 pick the highest value (likely the most relevant
             # standard).
@@ -680,6 +680,7 @@ class LLVMConfig(object):
         add_std_cxx("%std_cxx17-")
         add_std_cxx("%std_cxx20-")
         add_std_cxx("%std_cxx23-")
+        add_std_cxx("%std_cxx26-")
 
         # FIXME: Find nicer way to prohibit this.
         def prefer(this, to):

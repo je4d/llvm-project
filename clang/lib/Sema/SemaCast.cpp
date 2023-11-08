@@ -1790,10 +1790,18 @@ TryStaticMemberPointerUpcast(Sema &Self, ExprResult &SrcExpr, QualType SrcType,
     (void)Self.isCompleteType(OpRange.getBegin(), DestType);
   }
 
+  QualType SrcPointee = SrcMemPtr->getPointeeType();
+  QualType DestPointee = DestMemPtr->getPointeeType();
+
   // T == T, modulo cv
-  if (!Self.Context.hasSameUnqualifiedType(SrcMemPtr->getPointeeType(),
-                                           DestMemPtr->getPointeeType()))
+  if (!Self.Context.hasSameUnqualifiedType(SrcPointee, DestPointee))
     return TC_NotApplicable;
+
+  // Must preserve cv, as always, unless we're in C-style mode.
+  if (!CStyle && !DestPointee.isAtLeastAsQualifiedAs(SrcPointee)) {
+    msg = diag::err_bad_cxx_cast_qualifiers_away;
+    return TC_Failed;
+  }
 
   // B base of D
   QualType SrcClass(SrcMemPtr->getClass(), 0);
