@@ -3849,6 +3849,7 @@ public:
                                   unsigned *ArgPos = nullptr,
                                   bool Reversed = false);
   void HandleFunctionTypeMismatch(PartialDiagnostic &PDiag,
+                                  SourceLocation Loc,
                                   QualType FromType, QualType ToType);
 
   void maybeExtendBlockObject(ExprResult &E);

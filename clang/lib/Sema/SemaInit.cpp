@@ -9781,7 +9781,7 @@ bool InitializationSequence::Diagnose(Sema &S,
       << OnlyArg->isLValue()
       << FromType
       << Args[0]->getSourceRange();
-    S.HandleFunctionTypeMismatch(PDiag, FromType, DestType);
+    S.HandleFunctionTypeMismatch(PDiag, Kind.getLocation(), FromType, DestType);
     S.Diag(Kind.getLocation(), PDiag);
     emitBadConversionNotes(S, Entity, Args[0]);
     break;

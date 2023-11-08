@@ -10401,7 +10401,7 @@ void Sema::NoteHiddenVirtualMethods(CXXMethodDecl *MD,
     CXXMethodDecl *overloadedMD = OverloadedMethods[i];
     PartialDiagnostic PD = PDiag(
          diag::note_hidden_overloaded_virtual_declared_here) << overloadedMD;
-    HandleFunctionTypeMismatch(PD, MD->getType(), overloadedMD->getType());
+    HandleFunctionTypeMismatch(PD, overloadedMD->getLocation(), MD->getType(), overloadedMD->getType());
     Diag(overloadedMD->getLocation(), PD);
   }
 }

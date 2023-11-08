@@ -17919,7 +17919,7 @@ bool Sema::DiagnoseAssignmentResult(AssignConvertType ConvTy,
   if (MayHaveConvFixit) { FDiag << (unsigned) (ConvHints.Kind); }
 
   if (MayHaveFunctionDiff)
-    HandleFunctionTypeMismatch(FDiag, SecondType, FirstType);
+    HandleFunctionTypeMismatch(FDiag, Loc, SecondType, FirstType);
 
   Diag(Loc, FDiag);
   if ((DiagKind == diag::warn_incompatible_qualified_id ||

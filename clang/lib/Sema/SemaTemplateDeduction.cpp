@@ -5639,7 +5639,7 @@ UnresolvedSetIterator Sema::getMostSpecialized(
                       FD->getPrimaryTemplate()->getTemplateParameters(),
                       *FD->getTemplateSpecializationArgs());
       if (!TargetType.isNull())
-        HandleFunctionTypeMismatch(PD, FD->getType(), TargetType);
+        HandleFunctionTypeMismatch(PD, (*I)->getLocation(), FD->getType(), TargetType);
       Diag((*I)->getLocation(), PD);
     }
   }

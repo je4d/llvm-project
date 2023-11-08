@@ -3079,7 +3079,7 @@ enum {
   ft_parameter_arity,
   ft_parameter_mismatch,
   ft_return_type,
-  ft_qualifer_mismatch,
+  ft_qualifier_mismatch,
   ft_noexcept
 };
 
@@ -3099,6 +3099,7 @@ static const FunctionProtoType *tryGetFunctionProtoType(QualType FromType) {
 /// function types.  Catches different number of parameter, mismatch in
 /// parameter types, and different return types.
 void Sema::HandleFunctionTypeMismatch(PartialDiagnostic &PDiag,
+                                      SourceLocation Loc,
                                       QualType FromType, QualType ToType) {
   // If either type is not valid, include no extra info.
   if (FromType.isNull() || ToType.isNull()) {
@@ -3110,7 +3111,9 @@ void Sema::HandleFunctionTypeMismatch(PartialDiagnostic &PDiag,
   if (FromType->isMemberPointerType() && ToType->isMemberPointerType()) {
     const auto *FromMember = FromType->castAs<MemberPointerType>(),
                *ToMember = ToType->castAs<MemberPointerType>();
-    if (!Context.hasSameType(FromMember->getClass(), ToMember->getClass())) {
+    if (!Context.hasSameType(FromMember->getClass(), ToMember->getClass()) &&
+        !IsDerivedFrom(Loc, QualType(ToMember->getClass(), 0),
+                       QualType(FromMember->getClass(), 0))) {
       PDiag << ft_different_class << QualType(ToMember->getClass(), 0)
             << QualType(FromMember->getClass(), 0);
       return;
@@ -3174,7 +3177,7 @@ void Sema::HandleFunctionTypeMismatch(PartialDiagnostic &PDiag,
   }
 
   if (FromFunction->getMethodQuals() != ToFunction->getMethodQuals()) {
-    PDiag << ft_qualifer_mismatch << ToFunction->getMethodQuals()
+    PDiag << ft_qualifier_mismatch << ToFunction->getMethodQuals()
           << FromFunction->getMethodQuals();
     return;
   }
@@ -10927,7 +10930,7 @@ void Sema::NoteOverloadCandidate(const NamedDecl *Found, const FunctionDecl *Fn,
                          << (unsigned)KSPair.first << (unsigned)KSPair.second
                          << Fn << FnDesc;
 
-  HandleFunctionTypeMismatch(PD, Fn->getType(), DestType);
+  HandleFunctionTypeMismatch(PD, Fn->getLocation(), Fn->getType(), DestType);
   Diag(Fn->getLocation(), PD);
   MaybeEmitInheritedConstructorNote(*this, Found);
 }
