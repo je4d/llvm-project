@@ -276,6 +276,7 @@ llvm::Value *CGCXXABI::readArrayCookieImpl(CodeGenFunction &CGF,
 /// required.
 llvm::Constant *CGCXXABI::getMemberPointerAdjustment(const CastExpr *E) {
   assert(E->getCastKind() == CK_DerivedToBaseMemberPointee ||
+         E->getCastKind() == CK_BaseToDerivedMemberPointee ||
          E->getCastKind() == CK_DerivedToBaseMemberPointer ||
          E->getCastKind() == CK_BaseToDerivedMemberPointer);
 
@@ -291,7 +292,8 @@ llvm::Constant *CGCXXABI::getMemberPointerAdjustment(const CastExpr *E) {
 
   const CXXRecordDecl *derivedClass = nullptr;
 
-  if (E->getCastKind() == CK_DerivedToBaseMemberPointee)
+  if (E->getCastKind() == CK_DerivedToBaseMemberPointee ||
+      E->getCastKind() == CK_BaseToDerivedMemberPointee)
     derivedClass =
         memPtrType->getPointeeType().getTypePtr()->getAsCXXRecordDecl();
   else

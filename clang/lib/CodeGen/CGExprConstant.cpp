@@ -1165,6 +1165,7 @@ public:
 
     case CK_ReinterpretMemberPointer:
     case CK_DerivedToBaseMemberPointee:
+    case CK_BaseToDerivedMemberPointee:
     case CK_DerivedToBaseMemberPointer:
     case CK_BaseToDerivedMemberPointer: {
       auto C = Emitter.tryEmitPrivate(subExpr, subExpr->getType());

@@ -60,7 +60,8 @@ namespace {
       : Self(S), SrcExpr(src), DestType(destType),
         ResultType(destType.getNonLValueExprType(S.Context)),
         ValueKind(Expr::getValueKindForType(destType)),
-        Kind(CK_Dependent), IsARCUnbridgedCast(false) {
+        Kind(CK_Dependent), MemptrClassKind(CK_Dependent),
+        IsARCUnbridgedCast(false) {
 
       // C++ [expr.type]/8.2.2:
       //   If a pr-value initially has the type cv-T, where T is a
@@ -86,11 +87,14 @@ namespace {
     Sema &Self;
     ExprResult SrcExpr;
     QualType DestType;
+    QualType MemptrMidType;
     QualType ResultType;
     ExprValueKind ValueKind;
     CastKind Kind;
+    CastKind MemptrClassKind;
     BuiltinType::Kind PlaceholderKind;
     CXXCastPath BasePath;
+    CXXCastPath MemptrClassBasePath;
     bool IsARCUnbridgedCast;
 
     SourceRange OpRange;
@@ -240,14 +244,16 @@ static TryCastResult TryStaticDowncast(Sema &Self, CanQualType SrcType,
                                        QualType OrigDestType, unsigned &msg,
                                        CastKind &Kind,
                                        CXXCastPath &BasePath);
-static TryCastResult TryStaticMemberPointerUpcast(Sema &Self, ExprResult &SrcExpr,
-                                               QualType SrcType,
-                                               QualType DestType,bool CStyle,
-                                               SourceRange OpRange,
-                                               unsigned &msg,
-                                               CastKind &Kind,
-                                               CXXCastPath &BasePath);
-
+static TryCastResult TryStaticMemberPointerCast(Sema &Self, ExprResult &SrcExpr,
+                                                QualType SrcType,
+                                                QualType DestType, bool CStyle,
+                                                SourceRange OpRange,
+                                                unsigned &msg,
+                                                QualType &MidType,
+                                                CastKind &PointeeKind,
+                                                CastKind &ClassKind,
+                                                CXXCastPath &PointeeBasePath,
+                                                CXXCastPath &ClassBasePath);
 static TryCastResult TryStaticImplicitCast(Sema &Self, ExprResult &SrcExpr,
                                            QualType DestType,
                                            Sema::CheckedConversionKind CCK,
@@ -258,8 +264,12 @@ static TryCastResult TryStaticCast(Sema &Self, ExprResult &SrcExpr,
                                    QualType DestType,
                                    Sema::CheckedConversionKind CCK,
                                    SourceRange OpRange,
-                                   unsigned &msg, CastKind &Kind,
+                                   unsigned &msg,
+                                   QualType &MidType,
+                                   CastKind &Kind,
+                                   CastKind &MemptrClassKind,
                                    CXXCastPath &BasePath,
+                                   CXXCastPath &MemptrClassBasePath,
                                    bool ListInitialization);
 static TryCastResult TryConstCast(Sema &Self, ExprResult &SrcExpr,
                                   QualType DestType, bool CStyle,
@@ -271,6 +281,10 @@ static TryCastResult TryReinterpretCast(Sema &Self, ExprResult &SrcExpr,
 static TryCastResult TryAddressSpaceCast(Sema &Self, ExprResult &SrcExpr,
                                          QualType DestType, bool CStyle,
                                          unsigned &msg, CastKind &Kind);
+
+template <typename Node, typename... Ts>
+static ExprResult CreateCastNodes(CastOperation &Op, ASTContext &Context,
+                                  Ts &&... ts);
 
 /// ActOnCXXNamedCast - Parse
 /// {dynamic,static,reinterpret,const,addrspace}_cast's.
@@ -376,12 +390,48 @@ Sema::BuildCXXNamedCast(SourceLocation OpLoc, tok::TokenKind Kind,
       DiscardMisalignedMemberAddress(DestType.getTypePtr(), E);
     }
 
-    return Op.complete(CXXStaticCastExpr::Create(
-        Context, Op.ResultType, Op.ValueKind, Op.Kind, Op.SrcExpr.get(),
-        &Op.BasePath, DestTInfo, CurFPFeatureOverrides(), OpLoc,
-        Parens.getEnd(), AngleBrackets));
+    return CreateCastNodes<CXXStaticCastExpr>(
+        Op, Context, DestTInfo, CurFPFeatureOverrides(), OpLoc,
+        Parens.getEnd(), AngleBrackets);
   }
   }
+}
+
+/// CreateCastNodes - Creates the AST nodes for static_casts, c-style casts and
+/// functional-style casts.
+/// For all casts except member pointer casts, this calls
+/// Op.complete(NodeType::Create(...)). For Member pointers, additional
+/// ImplicitCastExpr nodes and/or NodeType nodes may be created if there are
+/// both class and pointee conversions involved.
+template <typename NodeType, typename... Ts>
+static ExprResult CreateCastNodes(CastOperation &Op,
+                                  ASTContext &Context, Ts &&... ts) {
+  ExprResult SubExpr = Op.SrcExpr;
+  if (Op.Kind == CK_DerivedToBaseMemberPointee) {
+    SubExpr =
+        ImplicitCastExpr::Create(Context, Op.MemptrMidType, Op.Kind,
+                                 SubExpr.get(), &Op.BasePath, Op.ValueKind, Op.Self.CurFPFeatureOverrides());
+  }
+  if (Op.MemptrClassKind == CK_BaseToDerivedMemberPointer) {
+    SubExpr = ImplicitCastExpr::Create(Context, Op.MemptrMidType,
+                                       Op.MemptrClassKind, SubExpr.get(),
+                                       &Op.MemptrClassBasePath, Op.ValueKind, Op.Self.CurFPFeatureOverrides());
+  }
+
+  CastKind Kind = Op.Kind;
+  CXXCastPath *BasePath = &Op.BasePath;
+  if (Op.MemptrClassKind == CK_DerivedToBaseMemberPointer) {
+    if (Op.Kind == CK_BaseToDerivedMemberPointee) {
+      SubExpr = Op.complete(
+          NodeType::Create(Context, Op.MemptrMidType, Op.ValueKind, Op.Kind,
+                       SubExpr.get(), &Op.BasePath, std::forward<Ts>(ts)...));
+    }
+    Kind = Op.MemptrClassKind;
+    BasePath = &Op.MemptrClassBasePath;
+  }
+  return Op.complete(NodeType::Create(Context, Op.ResultType, Op.ValueKind,
+                                      Kind, SubExpr.get(), BasePath,
+                                      std::forward<Ts>(ts)...));
 }
 
 ExprResult Sema::ActOnBuiltinBitCastExpr(SourceLocation KWLoc, Declarator &D,
@@ -1264,7 +1314,8 @@ void CastOperation::CheckStaticCast() {
   unsigned msg = diag::err_bad_cxx_cast_generic;
   TryCastResult tcr
     = TryStaticCast(Self, SrcExpr, DestType, Sema::CCK_OtherCast, OpRange, msg,
-                    Kind, BasePath, /*ListInitialization=*/false);
+                    MemptrMidType, Kind, MemptrClassKind, BasePath,
+                    MemptrClassBasePath, /*ListInitialization=*/false);
   if (tcr != TC_Success && msg != 0) {
     if (SrcExpr.isInvalid())
       return;
@@ -1308,7 +1359,10 @@ static TryCastResult TryStaticCast(Sema &Self, ExprResult &SrcExpr,
                                    QualType DestType,
                                    Sema::CheckedConversionKind CCK,
                                    SourceRange OpRange, unsigned &msg,
-                                   CastKind &Kind, CXXCastPath &BasePath,
+                                   QualType &MidType,
+                                   CastKind &Kind, CastKind &MemptrClassKind,
+                                   CXXCastPath &BasePath,
+                                   CXXCastPath &MemptrClassBasePath,
                                    bool ListInitialization) {
   // Determine whether we have the semantics of a C-style cast.
   bool CStyle
@@ -1423,10 +1477,11 @@ static TryCastResult TryStaticCast(Sema &Self, ExprResult &SrcExpr,
     return tcr;
 
   // Reverse member pointer conversion. C++ 4.11 specifies member pointer
-  // conversion. C++ 5.2.9p9 has additional information.
+  // conversion. C++ 5.2.9p12 has additional information.
   // DR54's access restrictions apply here also.
-  tcr = TryStaticMemberPointerUpcast(Self, SrcExpr, SrcType, DestType, CStyle,
-                                     OpRange, msg, Kind, BasePath);
+  tcr = TryStaticMemberPointerCast(Self, SrcExpr, SrcType, DestType, CStyle,
+                                   OpRange, msg, MidType, Kind, MemptrClassKind,
+                                   BasePath, MemptrClassBasePath);
   if (tcr != TC_NotApplicable)
     return tcr;
 
@@ -1747,19 +1802,22 @@ TryStaticDowncast(Sema &Self, CanQualType SrcType, CanQualType DestType,
   return TC_Success;
 }
 
-/// TryStaticMemberPointerUpcast - Tests whether a conversion according to
+/// TryStaticMemberPointerCast - Tests whether a conversion according to
 /// C++ 5.2.9p9 is valid:
 ///
-///   An rvalue of type "pointer to member of D of type cv1 T" can be
-///   converted to an rvalue of type "pointer to member of B of type cv2 T",
-///   where B is a base class of D [...].
+///   A prvalue of type "pointer to member of D1 of type cv1 B2" can be
+///   converted to a prvalue of type "pointer to member of B1 of type cv2 D2",
+///   where B1 and B2 are base classes (Clause 10) of D1 and D2 respectively
+///   [...].
 ///
 TryCastResult
-TryStaticMemberPointerUpcast(Sema &Self, ExprResult &SrcExpr, QualType SrcType,
-                             QualType DestType, bool CStyle,
-                             SourceRange OpRange,
-                             unsigned &msg, CastKind &Kind,
-                             CXXCastPath &BasePath) {
+TryStaticMemberPointerCast(Sema &Self, ExprResult &SrcExpr, QualType SrcType,
+                           QualType DestType, bool CStyle,
+                           SourceRange OpRange,
+                           unsigned &msg, QualType &MidType,
+                           CastKind &PointeeKind, CastKind &ClassKind,
+                           CXXCastPath &PointeeBasePath,
+                           CXXCastPath &ClassBasePath) {
   const MemberPointerType *DestMemPtr = DestType->getAs<MemberPointerType>();
   if (!DestMemPtr)
     return TC_NotApplicable;
@@ -1792,10 +1850,65 @@ TryStaticMemberPointerUpcast(Sema &Self, ExprResult &SrcExpr, QualType SrcType,
 
   QualType SrcPointee = SrcMemPtr->getPointeeType();
   QualType DestPointee = DestMemPtr->getPointeeType();
+  CXXBasePaths PointeePaths(/*FindAmbiguities=*/true, /*RecordPaths=*/true,
+                  /*DetectVirtual=*/true);
 
-  // T == T, modulo cv
-  if (!Self.Context.hasSameUnqualifiedType(SrcPointee, DestPointee))
-    return TC_NotApplicable;
+  // B2 == D2, modulo cv
+  bool PointeeIsSame =
+      Self.Context.hasSameUnqualifiedType(SrcPointee, DestPointee);
+  bool PointeeIsUpcast = false;
+  bool PointeeIsDowncast = false;
+  if (!PointeeIsSame) {
+    if (!Self.getLangOpts().CPlusPlus26)
+      return TC_NotApplicable;
+
+    PointeeIsUpcast = Self.IsDerivedFrom(OpRange.getBegin(), SrcPointee,
+                                         DestPointee, PointeePaths);
+    PointeeIsDowncast = !PointeeIsUpcast &&
+                        Self.IsDerivedFrom(OpRange.getBegin(), DestPointee,
+                                           SrcPointee, PointeePaths);
+
+    if (!(PointeeIsUpcast || PointeeIsDowncast))
+      return TC_NotApplicable;
+
+    if (PointeePaths.isAmbiguous(Self.Context.getCanonicalType(
+            PointeeIsUpcast ? DestPointee : SrcPointee))) {
+      std::string PathDisplayStr =
+          Self.getAmbiguousPathsDisplayString(PointeePaths);
+      Self.Diag(OpRange.getBegin(), diag::err_ambiguous_memptr_pointee_conv)
+          << PointeeIsDowncast << SrcPointee << DestPointee << PathDisplayStr
+          << OpRange;
+      msg = 0;
+      return TC_Failed;
+    }
+
+    if (const RecordType *VBase = PointeePaths.getDetectedVirtual()) {
+      Self.Diag(OpRange.getBegin(), diag::err_memptr_pointee_conv_via_virtual)
+          << SrcPointee << DestPointee << QualType(VBase, 0) << OpRange;
+      msg = 0;
+      return TC_Failed;
+    }
+
+    if (!CStyle) {
+      QualType BasePointee = PointeeIsUpcast ? DestPointee : SrcPointee;
+      QualType DerivedPointee = PointeeIsUpcast ? SrcPointee : DestPointee;
+      switch (Self.CheckBaseClassAccess(
+          OpRange.getBegin(), BasePointee, DerivedPointee, PointeePaths.front(),
+          PointeeIsUpcast ? diag::err_upcast_to_inaccessible_base
+                          : diag::err_downcast_from_inaccessible_base)) {
+      case Sema::AR_accessible:
+      case Sema::AR_delayed:
+      case Sema::AR_dependent:
+        // Optimistically assume that the delayed and dependent cases
+        // will work out.
+        break;
+
+      case Sema::AR_inaccessible:
+        msg = 0;
+        return TC_Failed;
+      }
+    }
+  }
 
   // Must preserve cv, as always, unless we're in C-style mode.
   if (!CStyle && !DestPointee.isAtLeastAsQualifiedAs(SrcPointee)) {
@@ -1803,53 +1916,67 @@ TryStaticMemberPointerUpcast(Sema &Self, ExprResult &SrcExpr, QualType SrcType,
     return TC_Failed;
   }
 
-  // B base of D
   QualType SrcClass(SrcMemPtr->getClass(), 0);
   QualType DestClass(DestMemPtr->getClass(), 0);
-  CXXBasePaths Paths(/*FindAmbiguities=*/true, /*RecordPaths=*/true,
+  CXXBasePaths ClassPaths(/*FindAmbiguities=*/true, /*RecordPaths=*/true,
                   /*DetectVirtual=*/true);
-  if (!Self.IsDerivedFrom(OpRange.getBegin(), SrcClass, DestClass, Paths))
-    return TC_NotApplicable;
 
-  // B is a base of D. But is it an allowed base? If not, it's a hard error.
-  if (Paths.isAmbiguous(Self.Context.getCanonicalType(DestClass))) {
-    Paths.clear();
-    Paths.setRecordingPaths(true);
-    bool StillOkay =
-        Self.IsDerivedFrom(OpRange.getBegin(), SrcClass, DestClass, Paths);
-    assert(StillOkay);
-    (void)StillOkay;
-    std::string PathDisplayStr = Self.getAmbiguousPathsDisplayString(Paths);
-    Self.Diag(OpRange.getBegin(), diag::err_ambiguous_memptr_class_conv)
-      << 1 << SrcClass << DestClass << PathDisplayStr << OpRange;
-    msg = 0;
-    return TC_Failed;
-  }
+  bool ClassIsSame = Self.Context.hasSameUnqualifiedType(SrcClass, DestClass);
+  bool ClassIsDowncast = false;
+  bool ClassIsUpcast = false;
+  if (!ClassIsSame) {
+    ClassIsDowncast =
+        Self.IsDerivedFrom(OpRange.getBegin(), DestClass, SrcClass, ClassPaths);
+    ClassIsUpcast =
+        !ClassIsDowncast &&
+        Self.IsDerivedFrom(OpRange.getBegin(), SrcClass, DestClass, ClassPaths);
 
-  if (const RecordType *VBase = Paths.getDetectedVirtual()) {
-    Self.Diag(OpRange.getBegin(), diag::err_memptr_class_conv_via_virtual)
-      << SrcClass << DestClass << QualType(VBase, 0) << OpRange;
-    msg = 0;
-    return TC_Failed;
-  }
+    if (!(ClassIsDowncast || ClassIsUpcast))
+      return TC_NotApplicable;
 
-  if (!CStyle) {
-    switch (Self.CheckBaseClassAccess(OpRange.getBegin(),
-                                      DestClass, SrcClass,
-                                      Paths.front(),
-                                      diag::err_upcast_to_inaccessible_base)) {
-    case Sema::AR_accessible:
-    case Sema::AR_delayed:
-    case Sema::AR_dependent:
-      // Optimistically assume that the delayed and dependent cases
-      // will work out.
-      break;
-
-    case Sema::AR_inaccessible:
+    // B1 is a base of D1. But is it an allowed base? If not, it's a hard
+    // error.
+    if (ClassPaths.isAmbiguous(Self.Context.getCanonicalType(
+            ClassIsDowncast ? SrcClass : DestClass))) {
+      std::string PathDisplayStr =
+          Self.getAmbiguousPathsDisplayString(ClassPaths);
+      Self.Diag(OpRange.getBegin(), diag::err_ambiguous_memptr_class_conv)
+          << ClassIsUpcast << SrcClass << DestClass << PathDisplayStr
+          << OpRange;
       msg = 0;
       return TC_Failed;
     }
+
+    if (const RecordType *VBase = ClassPaths.getDetectedVirtual()) {
+      Self.Diag(OpRange.getBegin(), diag::err_memptr_class_conv_via_virtual)
+          << SrcClass << DestClass << QualType(VBase, 0) << OpRange;
+      msg = 0;
+      return TC_Failed;
+    }
+
+    if (!CStyle) {
+      QualType BaseClass = ClassIsDowncast ? SrcClass : DestClass;
+      QualType DerivedClass = ClassIsDowncast ? DestClass : SrcClass;
+      switch (Self.CheckBaseClassAccess(
+          OpRange.getBegin(), BaseClass, DerivedClass, ClassPaths.front(),
+          ClassIsDowncast ? diag::err_downcast_from_inaccessible_base
+                          : diag::err_upcast_to_inaccessible_base)) {
+      case Sema::AR_accessible:
+      case Sema::AR_delayed:
+      case Sema::AR_dependent:
+        // Optimistically assume that the delayed and dependent cases
+        // will work out.
+        break;
+
+      case Sema::AR_inaccessible:
+        msg = 0;
+        return TC_Failed;
+      }
+    }
   }
+
+  if (!(PointeeIsDowncast || ClassIsUpcast))
+    return TC_NotApplicable;
 
   if (WasOverloadedFunction) {
     // Resolve the address of the overloaded function again, this time
@@ -1870,8 +1997,28 @@ TryStaticMemberPointerUpcast(Sema &Self, ExprResult &SrcExpr, QualType SrcType,
     }
   }
 
-  Self.BuildBasePathArray(Paths, BasePath);
-  Kind = CK_DerivedToBaseMemberPointer;
+  if (!PointeeIsSame && Self.getLangOpts().CPlusPlus26) {
+    Self.BuildBasePathArray(PointeePaths, PointeeBasePath);
+    PointeeKind = PointeeIsDowncast ? CK_BaseToDerivedMemberPointee
+                                    : CK_DerivedToBaseMemberPointee;
+  }
+
+  if (!ClassIsSame) {
+    Self.BuildBasePathArray(ClassPaths, ClassBasePath);
+    ClassKind = ClassIsUpcast ? CK_DerivedToBaseMemberPointer
+                              : CK_BaseToDerivedMemberPointer;
+  }
+
+  // need to work out what MidType should be and set it
+  if (PointeeIsSame || ClassIsSame)
+    MidType = DestType;
+  else if (PointeeIsDowncast && ClassIsDowncast)
+    MidType =
+        Self.Context.getMemberPointerType(SrcPointee, DestClass.getTypePtr());
+  else
+    MidType =
+        Self.Context.getMemberPointerType(DestPointee, SrcClass.getTypePtr());
+
   return TC_Success;
 }
 
@@ -2790,7 +2937,7 @@ void CastOperation::CheckCXXCStyleCast(bool FunctionalStyle,
     return;
   }
 
-  // C++ [expr.cast]p5: The conversions performed by
+  // C++ [expr.cast]p4: The conversions performed by
   //   - a const_cast,
   //   - a static_cast,
   //   - a static_cast followed by a const_cast,
@@ -2821,8 +2968,9 @@ void CastOperation::CheckCXXCStyleCast(bool FunctionalStyle,
     if (tcr == TC_NotApplicable) {
       // ... or if that is not possible, a static_cast, ignoring const and
       // addr space, ...
-      tcr = TryStaticCast(Self, SrcExpr, DestType, CCK, OpRange, msg, Kind,
-                          BasePath, ListInitialization);
+      tcr = TryStaticCast(Self, SrcExpr, DestType, CCK, OpRange, msg,
+                          MemptrMidType, Kind, MemptrClassKind, BasePath,
+                          MemptrClassBasePath, ListInitialization);
       if (SrcExpr.isInvalid())
         return;
 
@@ -3357,9 +3505,8 @@ ExprResult Sema::BuildCStyleCastExpr(SourceLocation LPLoc,
   // -Wcast-qual
   DiagnoseCastQual(Op.Self, Op.SrcExpr, Op.DestType);
 
-  return Op.complete(CStyleCastExpr::Create(
-      Context, Op.ResultType, Op.ValueKind, Op.Kind, Op.SrcExpr.get(),
-      &Op.BasePath, CurFPFeatureOverrides(), CastTypeInfo, LPLoc, RPLoc));
+  return CreateCastNodes<CStyleCastExpr>(
+      Op, Context, CurFPFeatureOverrides(), CastTypeInfo, LPLoc, RPLoc);
 }
 
 ExprResult Sema::BuildCXXFunctionalCastExpr(TypeSourceInfo *CastTypeInfo,
@@ -3385,7 +3532,6 @@ ExprResult Sema::BuildCXXFunctionalCastExpr(TypeSourceInfo *CastTypeInfo,
   // -Wcast-qual
   DiagnoseCastQual(Op.Self, Op.SrcExpr, Op.DestType);
 
-  return Op.complete(CXXFunctionalCastExpr::Create(
-      Context, Op.ResultType, Op.ValueKind, Op.Kind, Op.SrcExpr.get(),
-      &Op.BasePath, CastTypeInfo, CurFPFeatureOverrides(), LPLoc, RPLoc));
+  return CreateCastNodes<CXXFunctionalCastExpr>(
+      Op, Context, CastTypeInfo, CurFPFeatureOverrides(), LPLoc, RPLoc);
 }

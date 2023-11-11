@@ -882,6 +882,7 @@ ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
                                            const CastExpr *E,
                                            llvm::Value *src) {
   assert(E->getCastKind() == CK_DerivedToBaseMemberPointee ||
+         E->getCastKind() == CK_BaseToDerivedMemberPointee ||
          E->getCastKind() == CK_DerivedToBaseMemberPointer ||
          E->getCastKind() == CK_BaseToDerivedMemberPointer ||
          E->getCastKind() == CK_ReinterpretMemberPointer);
@@ -899,7 +900,8 @@ ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
   CGBuilderTy &Builder = CGF.Builder;
   bool isDerivedToBase = (E->getCastKind() == CK_DerivedToBaseMemberPointee ||
                           E->getCastKind() == CK_DerivedToBaseMemberPointer);
-  bool isPointeeConv   = E->getCastKind() == CK_DerivedToBaseMemberPointee;
+  bool isPointeeConv   = (E->getCastKind() == CK_DerivedToBaseMemberPointee ||
+                          E->getCastKind() == CK_BaseToDerivedMemberPointee);
 
   const MemberPointerType *destTy =
     E->getType()->castAs<MemberPointerType>();
@@ -940,6 +942,7 @@ llvm::Constant *
 ItaniumCXXABI::EmitMemberPointerConversion(const CastExpr *E,
                                            llvm::Constant *src) {
   assert(E->getCastKind() == CK_DerivedToBaseMemberPointee ||
+         E->getCastKind() == CK_BaseToDerivedMemberPointee ||
          E->getCastKind() == CK_DerivedToBaseMemberPointer ||
          E->getCastKind() == CK_BaseToDerivedMemberPointer ||
          E->getCastKind() == CK_ReinterpretMemberPointer);
@@ -953,7 +956,8 @@ ItaniumCXXABI::EmitMemberPointerConversion(const CastExpr *E,
 
   bool isDerivedToBase = (E->getCastKind() == CK_DerivedToBaseMemberPointee ||
                           E->getCastKind() == CK_DerivedToBaseMemberPointer);
-  bool isPointeeConv   = E->getCastKind() == CK_DerivedToBaseMemberPointee;
+  bool isPointeeConv   = (E->getCastKind() == CK_DerivedToBaseMemberPointee ||
+                          E->getCastKind() == CK_BaseToDerivedMemberPointee);
 
   const MemberPointerType *destTy =
     E->getType()->castAs<MemberPointerType>();

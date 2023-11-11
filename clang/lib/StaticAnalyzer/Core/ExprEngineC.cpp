@@ -519,6 +519,7 @@ void ExprEngine::VisitCast(const CastExpr *CastE, const Expr *Ex,
         [[fallthrough]];
       // Various C++ casts that are not handled yet.
       case CK_DerivedToBaseMemberPointee:
+      case CK_BaseToDerivedMemberPointee:
       case CK_ToUnion:
       case CK_MatrixCast:
       case CK_VectorSplat: {

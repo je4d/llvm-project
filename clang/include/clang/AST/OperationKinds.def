@@ -144,6 +144,11 @@ CAST_OPERATION(DerivedToBaseMemberPointer)
 ///   int A::*mptr = static_cast<int A::*>(&B::member);
 CAST_OPERATION(DerivedToBaseMemberPointee)
 
+/// CK_BaseToDerivedMemberPointeee - Member pointer to base class to
+/// member pointer to derived class.
+///   int B::*mptr = &A::member;
+CAST_OPERATION(BaseToDerivedMemberPointee)
+
 /// CK_MemberPointerToBoolean - Member pointer to boolean.  A check
 /// against the null member pointer.
 CAST_OPERATION(MemberPointerToBoolean)

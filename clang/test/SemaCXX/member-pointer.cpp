@@ -343,6 +343,18 @@ namespace conv {
 #if __cplusplus >= 202400L
   // expected-note@-3 7{{declared private here}}
 #endif
+  struct PD : P {};                                       // Derived
+  struct PAD1 : P {};
+  struct PAD2 : P {};
+  struct PAD : PAD1, PAD2 {};                             // Ambiguous derived
+  struct PVD : virtual P {};                              // Virtual derived
+  struct PAVD2 : P {};
+  struct PAVD : P, virtual PAVD2 {};                      // Virt+Ambiguous base
+  // expected-warning@-1 {{direct base 'P' is inaccessible due to ambiguity:\n    struct conv::PAVD -> P\n    struct conv::PAVD -> PAVD -> PAVD2}}
+  struct PPD : private P {};                              // Private derived
+#if __cplusplus >= 202400L
+  // expected-note@-2 3{{declared private here}}
+#endif
 
   struct CB {};                                           // Base
   struct CVB {};                                          // Ambiguous base
@@ -355,7 +367,7 @@ namespace conv {
   struct C : CB, CAB1, CAB2, virtual CVB, CAVB, virtual CAVB2, private CPB {};
   // expected-warning@-1 {{direct base 'CAVB' is inaccessible due to ambiguity:\n    struct conv::C -> CAVB\n    struct conv::C -> CAVB2 -> CAVB}}
 #if __cplusplus >= 202400L
-  // expected-note@-3 2{{declared private here}}
+  // expected-note@-3 3{{declared private here}}
 #else
   // expected-note@-5 {{declared private here}}
 #endif
@@ -369,7 +381,7 @@ namespace conv {
   // expected-warning@-1 {{direct base 'C' is inaccessible due to ambiguity:\n    struct conv::CAVD -> C\n    struct conv::CAVD -> CAVD -> CAVD2}}
   struct CPD : private C {};                              // Private derived
 #if __cplusplus >= 202400L
-  // expected-note@-2 6{{declared private here}}
+  // expected-note@-2 7{{declared private here}}
 #else
   // expected-note@-4 3{{declared private here}}
 #endif
@@ -886,6 +898,310 @@ namespace conv {
       (void) (PB CPB::*) c_to_p;
       (void) (PB const CB::*) c_to_p;
       (void) (PB CB::*) c_to_cp;
+#endif
+    }
+    {
+      // Pointee downcast, no class conversion, initialization syntax
+      PD C::*plain(c_to_p); // expected-error{{cannot initialize a variable of type 'PD conv::C::*' with an lvalue of type 'P conv::C::*'}}
+      PAD C::*ambig_pointee(c_to_p); // expected-error{{cannot initialize a variable of type 'PAD conv::C::*' with an lvalue of type 'P conv::C::*'}}
+      PVD C::*virt_pointee(c_to_p); // expected-error{{cannot initialize a variable of type 'PVD conv::C::*' with an lvalue of type 'P conv::C::*'}}
+      PAVD C::*virtambig_pointee(c_to_p); // expected-error{{cannot initialize a variable of type 'PAVD conv::C::*' with an lvalue of type 'P conv::C::*'}}
+      PPD C::*priv_pointee(c_to_p); // expected-error{{cannot initialize a variable of type 'PPD conv::C::*' with an lvalue of type 'P conv::C::*'}}
+      PD const C::*cvq_add(c_to_p); // expected-error{{cannot initialize a variable of type 'const PD conv::C::*' with an lvalue of type 'P conv::C::*'}}
+      PD C::*cvq_rem(c_to_cp); // expected-error{{cannot initialize a variable of type 'PD conv::C::*' with an lvalue of type 'const P conv::C::*'}}
+    }
+    {
+      // Pointee downcast, no class conversion, assignment syntax
+      PD C::*plain; plain = c_to_p; // expected-error{{assigning to 'PD conv::C::*' from incompatible type 'P conv::C::*'}}
+      PAD C::*ambig_pointee; ambig_pointee = c_to_p; // expected-error{{assigning to 'PAD conv::C::*' from incompatible type 'P conv::C::*'}}
+      PVD C::*virt_pointee; virt_pointee = c_to_p; // expected-error{{assigning to 'PVD conv::C::*' from incompatible type 'P conv::C::*'}}
+      PAVD C::*virtambig_pointee; virtambig_pointee = c_to_p; // expected-error{{assigning to 'PAVD conv::C::*' from incompatible type 'P conv::C::*'}}
+      PPD C::*priv_pointee; priv_pointee = c_to_p; // expected-error{{assigning to 'PPD conv::C::*' from incompatible type 'P conv::C::*'}}
+      PD const C::*cvq_add; cvq_add = c_to_p; // expected-error{{assigning to 'const PD conv::C::*' from incompatible type 'P conv::C::*'}}
+      PD C::*cvq_rem; cvq_rem = c_to_cp; // expected-error{{assigning to 'PD conv::C::*' from incompatible type 'const P conv::C::*'}}
+    }
+    {
+      // Pointee downcast, no class conversion, static_cast
+#if __cplusplus >= 202400L
+      (void) static_cast<PD C::*>(c_to_p);
+      (void) static_cast<PAD C::*>(c_to_p); // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAD' (derived class)}}
+      (void) static_cast<PVD C::*>(c_to_p); // expected-error{{conversion from pointer to member of type 'conv::P' to pointer to member of type 'PVD' via virtual base 'conv::P' is not allowed}}
+      (void) static_cast<PAVD C::*>(c_to_p); // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAVD' (derived class)}}
+      (void) static_cast<PPD C::*>(c_to_p); // expected-error{{cannot cast private base class 'conv::P' to 'PPD'}}
+      (void) static_cast<PD const C::*>(c_to_p);
+      (void) static_cast<PD C::*>(c_to_cp); // expected-error{{static_cast from 'const P conv::C::*' to 'PD conv::C::*' casts away qualifiers}}
+#else
+      (void) static_cast<PD C::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PD conv::C::*' is not allowed}}
+      (void) static_cast<PAD C::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PAD conv::C::*' is not allowed}}
+      (void) static_cast<PVD C::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PVD conv::C::*' is not allowed}}
+      (void) static_cast<PAVD C::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PAVD conv::C::*' is not allowed}}
+      (void) static_cast<PPD C::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PPD conv::C::*' is not allowed}}
+      (void) static_cast<PD const C::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'const PD conv::C::*' is not allowed}}
+      (void) static_cast<PD C::*>(c_to_cp); // expected-error{{static_cast from 'const P conv::C::*' to 'PD conv::C::*' is not allowed}}
+#endif
+    }
+    {
+      // Pointee downcast, no class conversion, function-style cast
+#if __cplusplus >= 202400L
+      typedef PD C::*CToPd; (void) CToPd(c_to_p);
+      typedef PAD C::*CToPad; (void) CToPad(c_to_p); // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAD' (derived class)}}
+      typedef PVD C::*CToPvd; (void) CToPvd(c_to_p); // expected-error{{conversion from pointer to member of type 'conv::P' to pointer to member of type 'PVD' via virtual base 'conv::P' is not allowed}}
+      typedef PAVD C::*CToPavd; (void) CToPavd(c_to_p); // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAVD' (derived class)}}
+      typedef PPD C::*CToPpd; (void) CToPpd(c_to_p);
+      typedef PD const C::*CToConstPd; (void) CToConstPd(c_to_p);
+      typedef PD C::*CToPd; (void) CToPd(c_to_cp);
+#else
+      typedef PD C::*CToPd; (void) CToPd(c_to_p);
+      typedef PAD C::*CToPad; (void) CToPad(c_to_p);
+      typedef PVD C::*CToPvd; (void) CToPvd(c_to_p);
+      typedef PAVD C::*CToPavd; (void) CToPavd(c_to_p);
+      typedef PPD C::*CToPpd; (void) CToPpd(c_to_p);
+      typedef PD const C::*CToConstPd; (void) CToConstPd(c_to_p);
+      typedef PD C::*CToPd; (void) CToPd(c_to_cp);
+#endif
+    }
+    {
+      // Pointee downcast, no class conversion, C-style cast
+#if __cplusplus >= 202400L
+      (void) (PD C::*) c_to_p;
+      (void) (PAD C::*) c_to_p; // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAD' (derived class)}}
+      (void) (PVD C::*) c_to_p; // expected-error{{conversion from pointer to member of type 'conv::P' to pointer to member of type 'PVD' via virtual base 'conv::P' is not allowed}}
+      (void) (PAVD C::*) c_to_p; // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAVD' (derived class)}}
+      (void) (PPD C::*) c_to_p;
+      (void) (PD const C::*) c_to_p;
+      (void) (PD C::*) c_to_cp;
+#else
+      (void) (PD C::*) c_to_p;
+      (void) (PAD C::*) c_to_p;
+      (void) (PVD C::*) c_to_p;
+      (void) (PAVD C::*) c_to_p;
+      (void) (PPD C::*) c_to_p;
+      (void) (PD const C::*) c_to_p;
+      (void) (PD C::*) c_to_cp;
+#endif
+    }
+    {
+      // Pointee downcast, class downcast, initialization syntax
+      PD CD::*plain(c_to_p); // expected-error{{cannot initialize a variable of type 'PD conv::CD::*' with an lvalue of type 'P conv::C::*'}}
+      PAD CD::*ambig_pointee(c_to_p); // expected-error{{cannot initialize a variable of type 'PAD conv::CD::*' with an lvalue of type 'P conv::C::*'}}
+      PVD CD::*virt_pointee(c_to_p); // expected-error{{cannot initialize a variable of type 'PVD conv::CD::*' with an lvalue of type 'P conv::C::*'}}
+      PAVD CD::*virtambig_pointee(c_to_p); // expected-error{{cannot initialize a variable of type 'PAVD conv::CD::*' with an lvalue of type 'P conv::C::*'}}
+      PPD CD::*priv_pointee(c_to_p); // expected-error{{cannot initialize a variable of type 'PPD conv::CD::*' with an lvalue of type 'P conv::C::*'}}
+      PD CAD::*ambig_class(c_to_p); // expected-error{{cannot initialize a variable of type 'PD conv::CAD::*' with an lvalue of type 'P conv::C::*'}}
+      PD CVD::*virt_class(c_to_p); // expected-error{{cannot initialize a variable of type 'PD conv::CVD::*' with an lvalue of type 'P conv::C::*'}}
+      PD CAVD::*virtambig_class(c_to_p); // expected-error{{cannot initialize a variable of type 'PD conv::CAVD::*' with an lvalue of type 'P conv::C::*'}}
+      PD CPD::*priv_class(c_to_p); // expected-error{{cannot initialize a variable of type 'PD conv::CPD::*' with an lvalue of type 'P conv::C::*'}}
+      PD const CD::*cvq_add(c_to_p); // expected-error{{cannot initialize a variable of type 'const PD conv::CD::*' with an lvalue of type 'P conv::C::*'}}
+      PD CD::*cvq_rem(c_to_cp); // expected-error{{cannot initialize a variable of type 'PD conv::CD::*' with an lvalue of type 'const P conv::C::*'}}
+    }
+    {
+      // Pointee downcast, class downcast, assignment syntax
+      PD CD::*plain; plain = c_to_p; // expected-error{{assigning to 'PD conv::CD::*' from incompatible type 'P conv::C::*'}}
+      PAD CD::*ambig_pointee; ambig_pointee = c_to_p; // expected-error{{assigning to 'PAD conv::CD::*' from incompatible type 'P conv::C::*'}}
+      PVD CD::*virt_pointee; virt_pointee = c_to_p; // expected-error{{assigning to 'PVD conv::CD::*' from incompatible type 'P conv::C::*'}}
+      PAVD CD::*virtambig_pointee; virtambig_pointee = c_to_p; // expected-error{{assigning to 'PAVD conv::CD::*' from incompatible type 'P conv::C::*'}}
+      PPD CD::*priv_pointee; priv_pointee = c_to_p; // expected-error{{assigning to 'PPD conv::CD::*' from incompatible type 'P conv::C::*'}}
+      PD CAD::*ambig_class; ambig_class = c_to_p; // expected-error{{assigning to 'PD conv::CAD::*' from incompatible type 'P conv::C::*'}}
+      PD CVD::*virt_class; virt_class = c_to_p; // expected-error{{assigning to 'PD conv::CVD::*' from incompatible type 'P conv::C::*'}}
+      PD CAVD::*virtambig_class; virtambig_class = c_to_p; // expected-error{{assigning to 'PD conv::CAVD::*' from incompatible type 'P conv::C::*'}}
+      PD CPD::*priv_class; priv_class = c_to_p; // expected-error{{assigning to 'PD conv::CPD::*' from incompatible type 'P conv::C::*'}}
+      PD const CD::*cvq_add; cvq_add = c_to_p; // expected-error{{assigning to 'const PD conv::CD::*' from incompatible type 'P conv::C::*'}}
+      PD CD::*cvq_rem; cvq_rem = c_to_cp; // expected-error{{assigning to 'PD conv::CD::*' from incompatible type 'const P conv::C::*'}}
+    }
+    {
+      // Pointee downcast, class downcast, static_cast
+#if __cplusplus >= 202400L
+      (void) static_cast<PD CD::*>(c_to_p);
+      (void) static_cast<PAD CD::*>(c_to_p); // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAD' (derived class)}}
+      (void) static_cast<PVD CD::*>(c_to_p); // expected-error{{conversion from pointer to member of type 'conv::P' to pointer to member of type 'PVD' via virtual base 'conv::P' is not allowed}}
+      (void) static_cast<PAVD CD::*>(c_to_p); // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAVD' (derived class)}}
+      (void) static_cast<PPD CD::*>(c_to_p); // expected-error{{cannot cast private base class 'conv::P' to 'PPD'}}
+      (void) static_cast<PD CAD::*>(c_to_p); // expected-error{{ambiguous conversion from pointer to member of base class 'conv::C' to pointer to member of derived class 'conv::CAD'}}
+      (void) static_cast<PD CVD::*>(c_to_p); // expected-error{{conversion from pointer to member of class 'conv::C' to pointer to member of class 'conv::CVD' via virtual base 'conv::C' is not allowed}}
+      (void) static_cast<PD CAVD::*>(c_to_p); // expected-error{{ambiguous conversion from pointer to member of base class 'conv::C' to pointer to member of derived class 'conv::CAVD'}}
+      (void) static_cast<PD CPD::*>(c_to_p); // expected-error{{cannot cast private base class 'conv::C' to 'conv::CPD'}}
+      (void) static_cast<PD const CD::*>(c_to_p);
+      (void) static_cast<PD CD::*>(c_to_cp); // expected-error{{static_cast from 'const P conv::C::*' to 'PD conv::CD::*' casts away qualifiers}}
+#else
+      (void) static_cast<PD CD::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PD conv::CD::*' is not allowed}}
+      (void) static_cast<PAD CD::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PAD conv::CD::*' is not allowed}}
+      (void) static_cast<PVD CD::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PVD conv::CD::*' is not allowed}}
+      (void) static_cast<PAVD CD::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PAVD conv::CD::*' is not allowed}}
+      (void) static_cast<PPD CD::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PPD conv::CD::*' is not allowed}}
+      (void) static_cast<PD CAD::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PD conv::CAD::*' is not allowed}}
+      (void) static_cast<PD CVD::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PD conv::CVD::*' is not allowed}}
+      (void) static_cast<PD CAVD::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PD conv::CAVD::*' is not allowed}}
+      (void) static_cast<PD CPD::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PD conv::CPD::*' is not allowed}}
+      (void) static_cast<PD const CD::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'const PD conv::CD::*' is not allowed}}
+      (void) static_cast<PD CD::*>(c_to_cp); // expected-error{{static_cast from 'const P conv::C::*' to 'PD conv::CD::*' is not allowed}}
+#endif
+    }
+    {
+      // Pointee downcast, class downcast, function-style cast
+#if __cplusplus >= 202400L
+      typedef PD CD::*CdToPd; (void) CdToPd(c_to_p);
+      typedef PAD CD::*CdToPad; (void) CdToPad(c_to_p); // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAD' (derived class)}}
+      typedef PVD CD::*CdToPvd; (void) CdToPvd(c_to_p); // expected-error{{conversion from pointer to member of type 'conv::P' to pointer to member of type 'PVD' via virtual base 'conv::P' is not allowed}}
+      typedef PAVD CD::*CdToPavd; (void) CdToPavd(c_to_p); // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAVD' (derived class)}}
+      typedef PPD CD::*CdToPpd; (void) CdToPpd(c_to_p);
+      typedef PD CAD::*CadToPd; (void) CadToPd(c_to_p); // expected-error{{ambiguous conversion from pointer to member of base class 'conv::C' to pointer to member of derived class 'conv::CAD'}}
+      typedef PD CVD::*CvdToPd; (void) CvdToPd(c_to_p); // expected-error{{conversion from pointer to member of class 'conv::C' to pointer to member of class 'conv::CVD' via virtual base 'conv::C' is not allowed}}
+      typedef PD CAVD::*CavdToPd; (void) CavdToPd(c_to_p); // expected-error{{ambiguous conversion from pointer to member of base class 'conv::C' to pointer to member of derived class 'conv::CAVD'}}
+      typedef PD CPD::*CpdToPd; (void) CpdToPd(c_to_p);
+      typedef PD const CD::*CdToConstPd; (void) CdToConstPd(c_to_p);
+      typedef PD CD::*CdToPd; (void) CdToPd(c_to_cp);
+#else
+      typedef PD CD::*CdToPd; (void) CdToPd(c_to_p);
+      typedef PAD CD::*CdToPad; (void) CdToPad(c_to_p);
+      typedef PVD CD::*CdToPvd; (void) CdToPvd(c_to_p);
+      typedef PAVD CD::*CdToPavd; (void) CdToPavd(c_to_p);
+      typedef PPD CD::*CdToPpd; (void) CdToPpd(c_to_p);
+      typedef PD CAD::*CadToPd; (void) CadToPd(c_to_p);
+      typedef PD CVD::*CvdToPd; (void) CvdToPd(c_to_p);
+      typedef PD CAVD::*CavdToPd; (void) CavdToPd(c_to_p);
+      typedef PD CPD::*CpdToPd; (void) CpdToPd(c_to_p);
+      typedef PD const CD::*CdToConstPd; (void) CdToConstPd(c_to_p);
+      typedef PD CD::*CdToPd; (void) CdToPd(c_to_cp);
+#endif
+    }
+    {
+      // Pointee downcast, class downcast, C-style cast
+#if __cplusplus >= 202400L
+      (void) (PD CD::*) c_to_p;
+      (void) (PAD CD::*) c_to_p; // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAD' (derived class)}}
+      (void) (PVD CD::*) c_to_p; // expected-error{{conversion from pointer to member of type 'conv::P' to pointer to member of type 'PVD' via virtual base 'conv::P' is not allowed}}
+      (void) (PAVD CD::*) c_to_p; // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAVD' (derived class)}}
+      (void) (PPD CD::*) c_to_p;
+      (void) (PD CAD::*) c_to_p; // expected-error{{ambiguous conversion from pointer to member of base class 'conv::C' to pointer to member of derived class 'conv::CAD'}}
+      (void) (PD CVD::*) c_to_p; // expected-error{{conversion from pointer to member of class 'conv::C' to pointer to member of class 'conv::CVD' via virtual base 'conv::C' is not allowed}}
+      (void) (PD CAVD::*) c_to_p; // expected-error{{ambiguous conversion from pointer to member of base class 'conv::C' to pointer to member of derived class 'conv::CAVD'}}
+      (void) (PD CPD::*) c_to_p;
+      (void) (PD const CD::*) c_to_p;
+      (void) (PD CD::*) c_to_cp;
+#else
+      (void) (PD CD::*) c_to_p;
+      (void) (PAD CD::*) c_to_p;
+      (void) (PVD CD::*) c_to_p;
+      (void) (PAVD CD::*) c_to_p;
+      (void) (PPD CD::*) c_to_p;
+      (void) (PD CAD::*) c_to_p;
+      (void) (PD CVD::*) c_to_p;
+      (void) (PD CAVD::*) c_to_p;
+      (void) (PD CPD::*) c_to_p;
+      (void) (PD const CD::*) c_to_p;
+      (void) (PD CD::*) c_to_cp;
+#endif
+    }
+    {
+      // Pointee downcast, class upcast, initialization syntax
+      PD CB::*plain(c_to_p); // expected-error{{cannot initialize a variable of type 'PD conv::CB::*' with an lvalue of type 'P conv::C::*'}}
+      PAD CB::*ambig_pointee(c_to_p); // expected-error{{cannot initialize a variable of type 'PAD conv::CB::*' with an lvalue of type 'P conv::C::*'}}
+      PVD CB::*virt_pointee(c_to_p); // expected-error{{cannot initialize a variable of type 'PVD conv::CB::*' with an lvalue of type 'P conv::C::*'}}
+      PAVD CB::*virtambig_pointee(c_to_p); // expected-error{{cannot initialize a variable of type 'PAVD conv::CB::*' with an lvalue of type 'P conv::C::*'}}
+      PPD CB::*priv_pointee(c_to_p); // expected-error{{cannot initialize a variable of type 'PPD conv::CB::*' with an lvalue of type 'P conv::C::*'}}
+      PD CAB::*ambig_class(c_to_p); // expected-error{{cannot initialize a variable of type 'PD conv::CAB::*' with an lvalue of type 'P conv::C::*'}}
+      PD CVB::*virt_class(c_to_p); // expected-error{{cannot initialize a variable of type 'PD conv::CVB::*' with an lvalue of type 'P conv::C::*'}}
+      PD CAVB::*virtambig_class(c_to_p); // expected-error{{cannot initialize a variable of type 'PD conv::CAVB::*' with an lvalue of type 'P conv::C::*'}}
+      PD CPB::*priv_class(c_to_p); // expected-error{{cannot initialize a variable of type 'PD conv::CPB::*' with an lvalue of type 'P conv::C::*'}}
+      PD const CB::*cvq_add(c_to_p); // expected-error{{cannot initialize a variable of type 'const PD conv::CB::*' with an lvalue of type 'P conv::C::*'}}
+      PD CB::*cvq_rem(c_to_cp); // expected-error{{cannot initialize a variable of type 'PD conv::CB::*' with an lvalue of type 'const P conv::C::*'}}
+    }
+    {
+      // Pointee downcast, class upcast, assignment syntax
+      PD CB::*plain; plain = c_to_p; // expected-error{{assigning to 'PD conv::CB::*' from incompatible type 'P conv::C::*'}}
+      PAD CB::*ambig_pointee; ambig_pointee = c_to_p; // expected-error{{assigning to 'PAD conv::CB::*' from incompatible type 'P conv::C::*'}}
+      PVD CB::*virt_pointee; virt_pointee = c_to_p; // expected-error{{assigning to 'PVD conv::CB::*' from incompatible type 'P conv::C::*'}}
+      PAVD CB::*virtambig_pointee; virtambig_pointee = c_to_p; // expected-error{{assigning to 'PAVD conv::CB::*' from incompatible type 'P conv::C::*'}}
+      PPD CB::*priv_pointee; priv_pointee = c_to_p; // expected-error{{assigning to 'PPD conv::CB::*' from incompatible type 'P conv::C::*'}}
+      PD CAB::*ambig_class; ambig_class = c_to_p; // expected-error{{assigning to 'PD conv::CAB::*' from incompatible type 'P conv::C::*'}}
+      PD CVB::*virt_class; virt_class = c_to_p; // expected-error{{assigning to 'PD conv::CVB::*' from incompatible type 'P conv::C::*'}}
+      PD CAVB::*virtambig_class; virtambig_class = c_to_p; // expected-error{{assigning to 'PD conv::CAVB::*' from incompatible type 'P conv::C::*'}}
+      PD CPB::*priv_class; priv_class = c_to_p; // expected-error{{assigning to 'PD conv::CPB::*' from incompatible type 'P conv::C::*'}}
+      PD const CB::*cvq_add; cvq_add = c_to_p; // expected-error{{assigning to 'const PD conv::CB::*' from incompatible type 'P conv::C::*'}}
+      PD CB::*cvq_rem; cvq_rem = c_to_cp; // expected-error{{assigning to 'PD conv::CB::*' from incompatible type 'const P conv::C::*'}}
+    }
+    {
+      // Pointee downcast, class upcast, static_cast
+#if __cplusplus >= 202400L
+      (void) static_cast<PD CB::*>(c_to_p);
+      (void) static_cast<PAD CB::*>(c_to_p); // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAD' (derived class)}}
+      (void) static_cast<PVD CB::*>(c_to_p); // expected-error{{conversion from pointer to member of type 'conv::P' to pointer to member of type 'PVD' via virtual base 'conv::P' is not allowed}}
+      (void) static_cast<PAVD CB::*>(c_to_p); // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAVD' (derived class)}}
+      (void) static_cast<PPD CB::*>(c_to_p); // expected-error{{cannot cast private base class 'conv::P' to 'PPD'}}
+      (void) static_cast<PD CAB::*>(c_to_p); // expected-error{{ambiguous conversion from pointer to member of derived class 'conv::C' to pointer to member of base class 'conv::CAB'}}
+      (void) static_cast<PD CVB::*>(c_to_p); // expected-error{{conversion from pointer to member of class 'conv::C' to pointer to member of class 'conv::CVB' via virtual base 'conv::CVB' is not allowed}}
+      (void) static_cast<PD CAVB::*>(c_to_p); // expected-error{{ambiguous conversion from pointer to member of derived class 'conv::C' to pointer to member of base class 'conv::CAVB'}}
+      (void) static_cast<PD CPB::*>(c_to_p); // expected-error{{cannot cast 'conv::C' to its private base class 'conv::CPB'}}
+      (void) static_cast<PD const CB::*>(c_to_p);
+      (void) static_cast<PD CB::*>(c_to_cp); // expected-error{{static_cast from 'const P conv::C::*' to 'PD conv::CB::*' casts away qualifiers}}
+#else
+      (void) static_cast<PD CB::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PD conv::CB::*' is not allowed}}
+      (void) static_cast<PAD CB::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PAD conv::CB::*' is not allowed}}
+      (void) static_cast<PVD CB::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PVD conv::CB::*' is not allowed}}
+      (void) static_cast<PAVD CB::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PAVD conv::CB::*' is not allowed}}
+      (void) static_cast<PPD CB::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PPD conv::CB::*' is not allowed}}
+      (void) static_cast<PD CAB::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PD conv::CAB::*' is not allowed}}
+      (void) static_cast<PD CVB::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PD conv::CVB::*' is not allowed}}
+      (void) static_cast<PD CAVB::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PD conv::CAVB::*' is not allowed}}
+      (void) static_cast<PD CPB::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'PD conv::CPB::*' is not allowed}}
+      (void) static_cast<PD const CB::*>(c_to_p); // expected-error{{static_cast from 'P conv::C::*' to 'const PD conv::CB::*' is not allowed}}
+      (void) static_cast<PD CB::*>(c_to_cp); // expected-error{{static_cast from 'const P conv::C::*' to 'PD conv::CB::*' is not allowed}}
+#endif
+    }
+    {
+      // Pointee downcast, class upcast, function-style cast
+#if __cplusplus >= 202400L
+      typedef PD CB::*CbToPd; (void) CbToPd(c_to_p);
+      typedef PAD CB::*CbToPad; (void) CbToPad(c_to_p); // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAD' (derived class)}}
+      typedef PVD CB::*CbToPvd; (void) CbToPvd(c_to_p); // expected-error{{conversion from pointer to member of type 'conv::P' to pointer to member of type 'PVD' via virtual base 'conv::P' is not allowed}}
+      typedef PAVD CB::*CbToPavd; (void) CbToPavd(c_to_p); // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAVD' (derived class)}}
+      typedef PPD CB::*CbToPpd; (void) CbToPpd(c_to_p);
+      typedef PD CAB::*CabToPd; (void) CabToPd(c_to_p); // expected-error{{ambiguous conversion from pointer to member of derived class 'conv::C' to pointer to member of base class 'conv::CAB'}}
+      typedef PD CVB::*CvbToPd; (void) CvbToPd(c_to_p); // expected-error{{conversion from pointer to member of class 'conv::C' to pointer to member of class 'conv::CVB' via virtual base 'conv::CVB' is not allowed}}
+      typedef PD CAVB::*CavbToPd; (void) CavbToPd(c_to_p); // expected-error{{ambiguous conversion from pointer to member of derived class 'conv::C' to pointer to member of base class 'conv::CAVB'}}
+      typedef PD CPB::*CpbToPd; (void) CpbToPd(c_to_p);
+      typedef PD const CB::*CbToConstPd; (void) CbToConstPd(c_to_p);
+      typedef PD CB::*CbToPd; (void) CbToPd(c_to_cp);
+#else
+      typedef PD CB::*CbToPd; (void) CbToPd(c_to_p);
+      typedef PAD CB::*CbToPad; (void) CbToPad(c_to_p);
+      typedef PVD CB::*CbToPvd; (void) CbToPvd(c_to_p);
+      typedef PAVD CB::*CbToPavd; (void) CbToPavd(c_to_p);
+      typedef PPD CB::*CbToPpd; (void) CbToPpd(c_to_p);
+      typedef PD CAB::*CabToPd; (void) CabToPd(c_to_p);
+      typedef PD CVB::*CvbToPd; (void) CvbToPd(c_to_p);
+      typedef PD CAVB::*CavbToPd; (void) CavbToPd(c_to_p);
+      typedef PD CPB::*CpbToPd; (void) CpbToPd(c_to_p);
+      typedef PD const CB::*CbToConstPd; (void) CbToConstPd(c_to_p);
+      typedef PD CB::*CbToPd; (void) CbToPd(c_to_cp);
+#endif
+    }
+    {
+      // Pointee downcast, class upcast, C-style cast
+#if __cplusplus >= 202400L
+      (void) (PD CB::*) c_to_p;
+      (void) (PAD CB::*) c_to_p; // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAD' (derived class)}}
+      (void) (PVD CB::*) c_to_p; // expected-error{{conversion from pointer to member of type 'conv::P' to pointer to member of type 'PVD' via virtual base 'conv::P' is not allowed}}
+      (void) (PAVD CB::*) c_to_p; // expected-error{{ambiguous conversion from pointer to member of type 'conv::P' (base class) to pointer to member of type 'PAVD' (derived class)}}
+      (void) (PPD CB::*) c_to_p;
+      (void) (PD CAB::*) c_to_p; // expected-error{{ambiguous conversion from pointer to member of derived class 'conv::C' to pointer to member of base class 'conv::CAB'}}
+      (void) (PD CVB::*) c_to_p; // expected-error{{conversion from pointer to member of class 'conv::C' to pointer to member of class 'conv::CVB' via virtual base 'conv::CVB' is not allowed}}
+      (void) (PD CAVB::*) c_to_p; // expected-error{{ambiguous conversion from pointer to member of derived class 'conv::C' to pointer to member of base class 'conv::CAVB'}}
+      (void) (PD CPB::*) c_to_p;
+      (void) (PD const CB::*) c_to_p;
+      (void) (PD CB::*) c_to_cp;
+#else
+      (void) (PD CB::*) c_to_p;
+      (void) (PAD CB::*) c_to_p;
+      (void) (PVD CB::*) c_to_p;
+      (void) (PAVD CB::*) c_to_p;
+      (void) (PPD CB::*) c_to_p;
+      (void) (PD CAB::*) c_to_p;
+      (void) (PD CVB::*) c_to_p;
+      (void) (PD CAVB::*) c_to_p;
+      (void) (PD CPB::*) c_to_p;
+      (void) (PD const CB::*) c_to_p;
+      (void) (PD CB::*) c_to_cp;
 #endif
     }
   }
