@@ -3111,6 +3111,16 @@ void Sema::HandleFunctionTypeMismatch(PartialDiagnostic &PDiag,
   if (FromType->isMemberPointerType() && ToType->isMemberPointerType()) {
     const auto *FromMember = FromType->castAs<MemberPointerType>(),
                *ToMember = ToType->castAs<MemberPointerType>();
+/* TODO
+    QualType FromPointee = FromMember->getPointeeType();
+    QualType ToPointee = ToMember->getPointeeType();
+    if (!Context.hasSameUnqualifiedType(ToPointee, FromPointee) &&
+        (!getLangOpts().CPlusPlus2a ||
+         !IsDerivedFrom(Loc, FromPointee, ToPointee))) {
+      PDiag << ft_different_class << ToPointee << FromPointee;
+      return;
+    } */
+
     if (!Context.hasSameType(FromMember->getClass(), ToMember->getClass()) &&
         !IsDerivedFrom(Loc, QualType(ToMember->getClass(), 0),
                        QualType(FromMember->getClass(), 0))) {
