@@ -63,28 +63,32 @@ namespace PR5674 {
   int A::*pb = &A::b;
 }
 
+// Conversions.
+namespace Conversions {
+}
+
 // Casts.
-namespace Casts {
+namespace ClassUpcast {
 
 int A::*pa;
 int C::*pc;
 
 void f() {
-  // CHECK:      store i64 -1, ptr @_ZN5Casts2paE
+  // CHECK:      store i64 -1, ptr @_ZN11ClassUpcast2paE
   pa = 0;
 
-  // CHECK-NEXT: [[TMP:%.*]] = load i64, ptr @_ZN5Casts2paE, align 8
+  // CHECK-NEXT: [[TMP:%.*]] = load i64, ptr @_ZN11ClassUpcast2paE, align 8
   // CHECK-NEXT: [[ADJ:%.*]] = add nsw i64 [[TMP]], 4
   // CHECK-NEXT: [[ISNULL:%.*]] = icmp eq i64 [[TMP]], -1
   // CHECK-NEXT: [[RES:%.*]] = select i1 [[ISNULL]], i64 [[TMP]], i64 [[ADJ]]
-  // CHECK-NEXT: store i64 [[RES]], ptr @_ZN5Casts2pcE
+  // CHECK-NEXT: store i64 [[RES]], ptr @_ZN11ClassUpcast2pcE
   pc = pa;
 
-  // CHECK-NEXT: [[TMP:%.*]] = load i64, ptr @_ZN5Casts2pcE, align 8
+  // CHECK-NEXT: [[TMP:%.*]] = load i64, ptr @_ZN11ClassUpcast2pcE, align 8
   // CHECK-NEXT: [[ADJ:%.*]] = sub nsw i64 [[TMP]], 4
   // CHECK-NEXT: [[ISNULL:%.*]] = icmp eq i64 [[TMP]], -1
   // CHECK-NEXT: [[RES:%.*]] = select i1 [[ISNULL]], i64 [[TMP]], i64 [[ADJ]]
-  // CHECK-NEXT: store i64 [[RES]], ptr @_ZN5Casts2paE
+  // CHECK-NEXT: store i64 [[RES]], ptr @_ZN11ClassUpcast2paE
   pa = static_cast<int A::*>(pc);
 }
 
