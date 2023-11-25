@@ -1460,6 +1460,8 @@ static bool castPreservesZero(const CastExpr *CE) {
 
   case CK_BaseToDerivedMemberPointer:
   case CK_DerivedToBaseMemberPointer:
+  case CK_BaseToDerivedMemberPointee:
+  case CK_DerivedToBaseMemberPointee:
   case CK_MemberPointerToBoolean:
   case CK_NullToMemberPointer:
   case CK_ReinterpretMemberPointer:
