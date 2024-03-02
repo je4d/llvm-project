@@ -420,7 +420,8 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(isConstexpr);
   REGISTER_MATCHER(isConstinit);
   REGISTER_MATCHER(isCopyAssignmentOperator);
-  REGISTER_MATCHER(isCopyConstructor);
+  REGISTER_MATCHER(isNonConstCopyConstructor);
+  REGISTER_MATCHER(isConstCopyConstructor);
   REGISTER_MATCHER(isDefaultConstructor);
   REGISTER_MATCHER(isDefaulted);
   REGISTER_MATCHER(isDefinition);
