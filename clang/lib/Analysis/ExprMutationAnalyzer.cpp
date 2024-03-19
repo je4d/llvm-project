@@ -174,7 +174,9 @@ const auto isMoveOnly = [] {
   return cxxRecordDecl(
       hasMethod(cxxConstructorDecl(isMoveConstructor(), unless(isDeleted()))),
       hasMethod(cxxMethodDecl(isMoveAssignmentOperator(), unless(isDeleted()))),
-      unless(anyOf(hasMethod(cxxConstructorDecl(isCopyConstructor(),
+      unless(anyOf(hasMethod(cxxConstructorDecl(isConstCopyConstructor(),
+                                                unless(isDeleted()))),
+                   hasMethod(cxxConstructorDecl(isNonConstCopyConstructor(),
                                                 unless(isDeleted()))),
                    hasMethod(cxxMethodDecl(isCopyAssignmentOperator(),
                                            unless(isDeleted()))))));

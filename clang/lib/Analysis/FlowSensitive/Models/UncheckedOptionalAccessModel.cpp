@@ -228,7 +228,7 @@ auto isOptionalInPlaceConstructor() {
 auto isOptionalValueOrConversionConstructor() {
   return cxxConstructExpr(
       unless(hasDeclaration(
-          cxxConstructorDecl(anyOf(isCopyConstructor(), isMoveConstructor())))),
+          cxxConstructorDecl(anyOf(isNonConstCopyConstructor(), isConstCopyConstructor(), isMoveConstructor())))),
       argumentCountIs(1), hasArgument(0, unless(hasNulloptType())),
       hasOptionalOrDerivedType());
 }

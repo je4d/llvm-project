@@ -589,7 +589,7 @@ void foo()
       Code, cxxConstructorDecl(
                 hasBody(compoundStmt()),
                 hasAncestor(lambdaExpr(hasAncestor(varDecl(hasName("l"))))),
-                isCopyConstructor())));
+                isNonConstCopyConstructor())));
   EXPECT_TRUE(matches(
       Code, cxxConstructorDecl(
                 hasBody(compoundStmt()),
@@ -3223,7 +3223,7 @@ struct CtorInitsNonTrivial : NonTrivial
     EXPECT_FALSE(matches(Code, traverse(TK_IgnoreUnlessSpelledInSource, M)));
 
     M = cxxRecordDecl(hasName("NoSpecialMethods"),
-                      has(cxxConstructorDecl(isCopyConstructor())));
+                      has(cxxConstructorDecl(isNonConstCopyConstructor())));
     EXPECT_TRUE(matches(Code, traverse(TK_AsIs, M)));
     EXPECT_FALSE(matches(Code, traverse(TK_IgnoreUnlessSpelledInSource, M)));
 
@@ -3242,7 +3242,7 @@ struct CtorInitsNonTrivial : NonTrivial
     EXPECT_FALSE(matches(Code, traverse(TK_IgnoreUnlessSpelledInSource, M)));
 
     M = cxxRecordDecl(hasName("NoSpecialMethods"),
-                      hasMethod(cxxConstructorDecl(isCopyConstructor())));
+                      hasMethod(cxxConstructorDecl(isNonConstCopyConstructor())));
     EXPECT_TRUE(matches(Code, traverse(TK_AsIs, M)));
     EXPECT_FALSE(matches(Code, traverse(TK_IgnoreUnlessSpelledInSource, M)));
 

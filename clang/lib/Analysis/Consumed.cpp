@@ -786,7 +786,7 @@ void ConsumedStmtVisitor::VisitCXXConstructExpr(const CXXConstructExpr *Call) {
       PropagationInfo(consumed::CS_Consumed)));
   } else if (Constructor->isMoveConstructor()) {
     copyInfo(Call->getArg(0), Call, CS_Consumed);
-  } else if (Constructor->isCopyConstructor()) {
+  } else if (Constructor->isConstCopyConstructor() || Constructor->isNonConstCopyConstructor()) {
     // Copy state from arg.  If setStateOnRead then set arg to CS_Unknown.
     ConsumedState NS =
       isSetOnReadPtrType(Constructor->getThisType()) ?

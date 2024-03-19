@@ -1618,9 +1618,13 @@ class Cursor(Structure):
         """Returns True if the cursor refers to a C++ converting constructor."""
         return conf.lib.clang_CXXConstructor_isConvertingConstructor(self)
 
-    def is_copy_constructor(self):
-        """Returns True if the cursor refers to a C++ copy constructor."""
-        return conf.lib.clang_CXXConstructor_isCopyConstructor(self)
+    def is_const_copy_constructor(self):
+        """Returns True if the cursor refers to a const C++ copy constructor."""
+        return conf.lib.clang_CXXConstructor_isConstCopyConstructor(self)
+
+    def is_non_const_copy_constructor(self):
+        """Returns True if the cursor refers to a non-const C++ copy constructor. """
+        return conf.lib.clang_CXXConstructor_isNonConstCopyConstructor(self)
 
     def is_default_constructor(self):
         """Returns True if the cursor refers to a C++ default constructor."""
@@ -3809,7 +3813,8 @@ functionList = [
     ("clang_CXRewriter_replaceText", [Rewriter, SourceRange, c_interop_string]),
     ("clang_CXRewriter_writeMainFileToStdOut", [Rewriter]),
     ("clang_CXXConstructor_isConvertingConstructor", [Cursor], bool),
-    ("clang_CXXConstructor_isCopyConstructor", [Cursor], bool),
+    ("clang_CXXConstructor_isNonConstCopyConstructor", [Cursor], bool),
+    ("clang_CXXConstructor_isConstCopyConstructor", [Cursor], bool),
     ("clang_CXXConstructor_isDefaultConstructor", [Cursor], bool),
     ("clang_CXXConstructor_isMoveConstructor", [Cursor], bool),
     ("clang_CXXField_isMutable", [Cursor], bool),

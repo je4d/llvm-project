@@ -8981,14 +8981,28 @@ unsigned clang_CXXConstructor_isDefaultConstructor(CXCursor C) {
   return (Constructor && Constructor->isDefaultConstructor()) ? 1 : 0;
 }
 
-unsigned clang_CXXConstructor_isCopyConstructor(CXCursor C) {
+unsigned clang_CXXConstructor_isConstCopyConstructor(CXCursor C) {
   if (!clang_isDeclaration(C.kind))
     return 0;
 
   const Decl *D = cxcursor::getCursorDecl(C);
   const CXXConstructorDecl *Constructor =
       D ? dyn_cast_or_null<CXXConstructorDecl>(D->getAsFunction()) : nullptr;
-  return (Constructor && Constructor->isCopyConstructor()) ? 1 : 0;
+  return (Constructor && Constructor->isConstCopyConstructor()) ? 1 : 0;
+}
+
+//unsigned clang_CXXConstructor_isCopyConstructor(CXCursor C) {
+//  return clang_CXXConstructor_isConstCopyConstructor(C) || clang_CXXConstructor_isNonConstCopyConstructor(C);
+//}
+//
+unsigned clang_CXXConstructor_isNonConstCopyConstructor(CXCursor C) {
+  if (!clang_isDeclaration(C.kind))
+    return 0;
+
+  const Decl *D = cxcursor::getCursorDecl(C);
+  const CXXConstructorDecl *Constructor =
+      D ? dyn_cast_or_null<CXXConstructorDecl>(D->getAsFunction()) : nullptr;
+  return (Constructor && Constructor->isNonConstCopyConstructor()) ? 1 : 0;
 }
 
 unsigned clang_CXXConstructor_isMoveConstructor(CXCursor C) {

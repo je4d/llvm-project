@@ -3289,8 +3289,12 @@ TEST_P(ImportImplicitMethods, DefaultConstructor) {
   testImportOf(cxxConstructorDecl(isDefaultConstructor()));
 }
 
-TEST_P(ImportImplicitMethods, CopyConstructor) {
-  testImportOf(cxxConstructorDecl(isCopyConstructor()));
+TEST_P(ImportImplicitMethods, ConstCopyConstructor) {
+  testImportOf(cxxConstructorDecl(isConstCopyConstructor()));
+}
+
+TEST_P(ImportImplicitMethods, NonConstCopyConstructor) {
+  testImportOf(cxxConstructorDecl(isNonConstCopyConstructor()));
 }
 
 TEST_P(ImportImplicitMethods, MoveConstructor) {
@@ -7061,7 +7065,7 @@ TEST_P(ASTImporterOptionSpecificTestBase,
                              ->getLambdaClass();
 
   CXXConstructorDecl *FromCtor = *FromL->ctor_begin();
-  ASSERT_TRUE(FromCtor->isCopyConstructor());
+  ASSERT_TRUE(FromCtor->isNonConstCopyConstructor());
   ASSERT_TRUE(FromCtor->getTypeSourceInfo());
   const auto *FromFPT = FromCtor->getType()->getAs<FunctionProtoType>();
   ASSERT_TRUE(FromFPT);
@@ -8438,7 +8442,7 @@ TEST_P(ASTImporterOptionSpecificTestBase,
                                parameterCountIs(2)));
     auto *ConstrB = FirstDeclMatcher<CXXConstructorDecl>().match(
         TU, cxxConstructorDecl(hasParent(equalsNode(RecordB)),
-                               isCopyConstructor()));
+                               isNonConstCopyConstructor()));
     auto *UsingD2V1 = FirstDeclMatcher<UsingDecl>().match(
         TU, usingDecl(hasParent(equalsNode(RecordD2))));
     auto *UsingD2V2 = LastDeclMatcher<UsingDecl>().match(

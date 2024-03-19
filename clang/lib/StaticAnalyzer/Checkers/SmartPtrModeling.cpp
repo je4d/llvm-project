@@ -374,7 +374,10 @@ bool SmartPtrModeling::evalCall(const CallEvent &Call,
     return false;
 
   if (const auto *CC = dyn_cast<CXXConstructorCall>(&Call)) {
-    if (CC->getDecl()->isCopyConstructor())
+    if (CC->getDecl()->isConstCopyConstructor())
+      return false;
+
+    if (CC->getDecl()->isNonConstCopyConstructor())
       return false;
 
     const MemRegion *ThisRegion = CC->getCXXThisVal().getAsRegion();

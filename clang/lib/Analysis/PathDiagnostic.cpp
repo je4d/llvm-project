@@ -956,8 +956,10 @@ static bool describeCodeDecl(raw_ostream &Out, const Decl *D,
     if (const auto *CD = dyn_cast<CXXConstructorDecl>(MD)) {
       if (CD->isDefaultConstructor())
         Out << "default ";
-      else if (CD->isCopyConstructor())
-        Out << "copy ";
+      else if (CD->isConstCopyConstructor())
+        Out << "const copy ";
+      else if (CD->isNonConstCopyConstructor())
+        Out << "non-const copy ";
       else if (CD->isMoveConstructor())
         Out << "move ";
 

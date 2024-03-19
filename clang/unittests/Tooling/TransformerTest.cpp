@@ -1153,7 +1153,7 @@ struct Other {
                                     CodeSuffix;
 
   auto MatchedRecord =
-      cxxConstructorDecl(isCopyConstructor()).bind("copyConstructor");
+      cxxConstructorDecl(isNonConstCopyConstructor()).bind("copyConstructor");
 
   auto RewriteRule =
       changeTo(before(node("copyConstructor")), cat("explicit "));
