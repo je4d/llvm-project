@@ -2442,7 +2442,10 @@ TEST_P(ASTMatchersTest, CXXConstructorDecl_Kinds) {
                                                        unless(isImplicit()))));
   EXPECT_TRUE(notMatches(
       "struct S { S(); };",
-      cxxConstructorDecl(isCopyConstructor(), unless(isImplicit()))));
+      cxxConstructorDecl(isConstCopyConstructor(), unless(isImplicit()))));
+  EXPECT_TRUE(notMatches(
+      "struct S { S(); };",
+      cxxConstructorDecl(isNonConstCopyConstructor(), unless(isImplicit()))));
   EXPECT_TRUE(notMatches(
       "struct S { S(); };",
       cxxConstructorDecl(isMoveConstructor(), unless(isImplicit()))));
@@ -2452,7 +2455,7 @@ TEST_P(ASTMatchersTest, CXXConstructorDecl_Kinds) {
       cxxConstructorDecl(isDefaultConstructor(), unless(isImplicit()))));
   EXPECT_TRUE(
       matches("struct S { S(const S&); };",
-              cxxConstructorDecl(isCopyConstructor(), unless(isImplicit()))));
+              cxxConstructorDecl(isNonConstCopyConstructor(), unless(isImplicit()))));
   EXPECT_TRUE(notMatches(
       "struct S { S(const S&); };",
       cxxConstructorDecl(isMoveConstructor(), unless(isImplicit()))));
@@ -2462,7 +2465,10 @@ TEST_P(ASTMatchersTest, CXXConstructorDecl_Kinds) {
       cxxConstructorDecl(isDefaultConstructor(), unless(isImplicit()))));
   EXPECT_TRUE(notMatches(
       "struct S { S(S&&); };",
-      cxxConstructorDecl(isCopyConstructor(), unless(isImplicit()))));
+      cxxConstructorDecl(isConstCopyConstructor(), unless(isImplicit()))));
+  EXPECT_TRUE(notMatches(
+      "struct S { S(S&&); };",
+      cxxConstructorDecl(isNonConstCopyConstructor(), unless(isImplicit()))));
   EXPECT_TRUE(
       matches("struct S { S(S&&); };",
               cxxConstructorDecl(isMoveConstructor(), unless(isImplicit()))));

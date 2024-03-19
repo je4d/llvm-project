@@ -23,7 +23,8 @@ LLVM_13 {
     clang_CXRewriter_replaceText;
     clang_CXRewriter_writeMainFileToStdOut;
     clang_CXXConstructor_isConvertingConstructor;
-    clang_CXXConstructor_isCopyConstructor;
+    clang_CXXConstructor_isConstCopyConstructor;
+    clang_CXXConstructor_isNonConstCopyConstructor;
     clang_CXXConstructor_isDefaultConstructor;
     clang_CXXConstructor_isMoveConstructor;
     clang_CXXField_isMutable;

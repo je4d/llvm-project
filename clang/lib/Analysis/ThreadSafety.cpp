@@ -2089,7 +2089,7 @@ void BuildLockset::VisitCallExpr(const CallExpr *Exp) {
 
 void BuildLockset::VisitCXXConstructExpr(const CXXConstructExpr *Exp) {
   const CXXConstructorDecl *D = Exp->getConstructor();
-  if (D && D->isCopyConstructor()) {
+  if (D && (D->isConstCopyConstructor() || D->isNonConstCopyConstructor())) {
     const Expr* Source = Exp->getArg(0);
     checkAccess(Source, AK_Read);
   } else {

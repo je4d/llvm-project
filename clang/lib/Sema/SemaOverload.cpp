@@ -1623,7 +1623,7 @@ TryUserDefinedConversion(Sema &S, Expr *From, QualType ToType,
         = S.Context.getCanonicalType(From->getType().getUnqualifiedType());
       QualType ToCanon
         = S.Context.getCanonicalType(ToType).getUnqualifiedType();
-      if (Constructor->isCopyConstructor() &&
+      if ((Constructor->isConstCopyConstructor() || Constructor->isNonConstCopyConstructor()) &&
           (FromCanon == ToCanon ||
            S.IsDerivedFrom(From->getBeginLoc(), FromCanon, ToCanon))) {
         // Turn this into a "standard" conversion sequence, so that it
@@ -10976,7 +10976,8 @@ enum OverloadCandidateKind {
   oc_reversed_binary_operator,
   oc_constructor,
   oc_implicit_default_constructor,
-  oc_implicit_copy_constructor,
+  oc_implicit_const_copy_constructor,
+  oc_implicit_non_const_copy_constructor,
   oc_implicit_move_constructor,
   oc_implicit_copy_assignment,
   oc_implicit_move_assignment,
@@ -11030,9 +11031,12 @@ ClassifyOverloadCandidate(Sema &S, const NamedDecl *Found,
       if (Ctor->isMoveConstructor())
         return oc_implicit_move_constructor;
 
-      assert(Ctor->isCopyConstructor() &&
+      if (Ctor->isConstCopyConstructor())
+        return oc_implicit_const_copy_constructor;
+
+      assert(Ctor->isNonConstCopyConstructor() &&
              "unexpected sort of implicit constructor");
-      return oc_implicit_copy_constructor;
+      return oc_implicit_non_const_copy_constructor;
     }
 
     if (const auto *Meth = dyn_cast<CXXMethodDecl>(Fn)) {
@@ -11965,8 +11969,11 @@ static void DiagnoseBadTarget(Sema &S, OverloadCandidate *Cand) {
     case oc_implicit_default_constructor:
       CSM = Sema::CXXDefaultConstructor;
       break;
-    case oc_implicit_copy_constructor:
-      CSM = Sema::CXXCopyConstructor;
+    case oc_implicit_const_copy_constructor:
+      CSM = Sema::CXXConstCopyConstructor;
+      break;
+    case oc_implicit_non_const_copy_constructor:
+      CSM = Sema::CXXNonConstCopyConstructor;
       break;
     case oc_implicit_move_constructor:
       CSM = Sema::CXXMoveConstructor;

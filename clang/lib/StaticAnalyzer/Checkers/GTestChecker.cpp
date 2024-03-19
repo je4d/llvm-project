@@ -200,7 +200,7 @@ void GTestChecker::checkPostCall(const CallEvent &Call,
   // types.
 
   // We have AssertionResult(const &AssertionResult)
-  if (CtorDecl->isCopyConstructor() && ParamCount == 1) {
+  if ((CtorDecl->isConstCopyConstructor() || CtorDecl->isNonConstCopyConstructor()) && ParamCount == 1) {
     modelAssertionResultCopyConstructor(CtorCall, C);
     return;
   }

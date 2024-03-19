@@ -936,8 +936,10 @@ static void PrintCursor(CXCursor Cursor, const char *CommentSchemaFile) {
 
     if (clang_CXXConstructor_isMoveConstructor(Cursor))
       printf(" (move constructor)");
-    if (clang_CXXConstructor_isCopyConstructor(Cursor))
-      printf(" (copy constructor)");
+    if (clang_CXXConstructor_isConstCopyConstructor(Cursor))
+      printf(" (const copy constructor)");
+    if (clang_CXXConstructor_isNonConstCopyConstructor(Cursor))
+      printf(" (non-const copy constructor)");
     if (clang_CXXConstructor_isConvertingConstructor(Cursor))
       printf(" (converting constructor)");
     if (clang_CXXField_isMutable(Cursor))

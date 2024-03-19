@@ -4424,9 +4424,14 @@ CINDEX_LINKAGE unsigned
 clang_CXXConstructor_isConvertingConstructor(CXCursor C);
 
 /**
- * Determine if a C++ constructor is a copy constructor.
+ * Determine if a C++ constructor is a const copy constructor.
  */
-CINDEX_LINKAGE unsigned clang_CXXConstructor_isCopyConstructor(CXCursor C);
+CINDEX_LINKAGE unsigned clang_CXXConstructor_isConstCopyConstructor(CXCursor C);
+
+/**
+ * Determine if a C++ constructor is a non-constcopy constructor.
+ */
+CINDEX_LINKAGE unsigned clang_CXXConstructor_isNonConstCopyConstructor(CXCursor C);
 
 /**
  * Determine if a C++ constructor is the default constructor.

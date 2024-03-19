@@ -1929,7 +1929,7 @@ bool Sema::CaptureHasSideEffects(const Capture &From) {
   if (const CXXRecordDecl *RD = BaseT->getAsCXXRecordDecl())
     return !RD->isCompleteDefinition()
       || !(From.getCaptureType().isConstQualified()
-        ? (RD->hasTrivialConstCopyConstructor() || (!RD->hasNonTrivalConstCopyConstructor() && RD->hasTrivialNonConstCopyConstructor()))
+        ? (RD->hasTrivialConstCopyConstructor() || (!RD->hasNonTrivialConstCopyConstructor() && RD->hasTrivialNonConstCopyConstructor()))
         : RD->hasTrivialNonConstCopyConstructor())
       || !RD->hasTrivialDestructor();
 

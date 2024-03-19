@@ -5111,7 +5111,8 @@ void Sema::InstantiateFunctionDefinition(SourceLocation PointOfInstantiation,
     assert(PatternDecl->isDefaulted() &&
            "Special member needs to be defaulted");
     auto PatternSM = getDefaultedFunctionKind(PatternDecl).asSpecialMember();
-    if (!(PatternSM == Sema::CXXCopyConstructor ||
+    if (!(PatternSM == Sema::CXXConstCopyConstructor ||
+          PatternSM == Sema::CXXNonConstCopyConstructor ||
           PatternSM == Sema::CXXCopyAssignment ||
           PatternSM == Sema::CXXMoveConstructor ||
           PatternSM == Sema::CXXMoveAssignment))

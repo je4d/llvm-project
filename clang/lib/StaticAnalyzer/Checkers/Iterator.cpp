@@ -37,7 +37,7 @@ bool isIterator(const CXXRecordDecl *CRD) {
        HasPreIncrOp = false, HasPostIncrOp = false, HasDerefOp = false;
   for (const auto *Method : CRD->methods()) {
     if (const auto *Ctor = dyn_cast<CXXConstructorDecl>(Method)) {
-      if (Ctor->isCopyConstructor()) {
+      if (Ctor->isConstCopyConstructor() || Ctor->isNonConstCopyConstructor()) {
         HasCopyCtor = !Ctor->isDeleted() && Ctor->getAccess() == AS_public;
       }
       continue;

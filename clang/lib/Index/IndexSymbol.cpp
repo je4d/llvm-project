@@ -257,8 +257,10 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
       Info.Kind = SymbolKind::Constructor;
       Info.Lang = SymbolLanguage::CXX;
       auto *CD = cast<CXXConstructorDecl>(D);
-      if (CD->isCopyConstructor())
-        Info.SubKind = SymbolSubKind::CXXCopyConstructor;
+      if (CD->isConstCopyConstructor())
+        Info.SubKind = SymbolSubKind::CXXConstCopyConstructor;
+      if (CD->isNonConstCopyConstructor())
+        Info.SubKind = SymbolSubKind::CXXNonConstCopyConstructor;
       else if (CD->isMoveConstructor())
         Info.SubKind = SymbolSubKind::CXXMoveConstructor;
       break;
@@ -546,7 +548,8 @@ StringRef index::getSymbolKindString(SymbolKind K) {
 StringRef index::getSymbolSubKindString(SymbolSubKind K) {
   switch (K) {
   case SymbolSubKind::None: return "<none>";
-  case SymbolSubKind::CXXCopyConstructor: return "cxx-copy-ctor";
+  case SymbolSubKind::CXXConstCopyConstructor: return "cxx-const-copy-ctor";
+  case SymbolSubKind::CXXNonConstCopyConstructor: return "cxx-non-const-copy-ctor";
   case SymbolSubKind::CXXMoveConstructor: return "cxx-move-ctor";
   case SymbolSubKind::AccessorGetter: return "acc-get";
   case SymbolSubKind::AccessorSetter: return "acc-set";

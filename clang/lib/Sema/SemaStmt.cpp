@@ -3222,7 +3222,7 @@ static void DiagnoseForRangeConstVariableCopies(Sema &SemaRef,
   QualType VariableType = VD->getType();
 
   if (const CXXConstructExpr *CE = dyn_cast<CXXConstructExpr>(InitExpr)) {
-    if (!CE->getConstructor()->isCopyConstructor())
+    if (!(CE->getConstructor()->isConstCopyConstructor() || CE->getConstructor()->isNonConstCopyConstructor()))
       return;
   } else if (const CastExpr *CE = dyn_cast<CastExpr>(InitExpr)) {
     if (CE->getCastKind() != CK_LValueToRValue)
