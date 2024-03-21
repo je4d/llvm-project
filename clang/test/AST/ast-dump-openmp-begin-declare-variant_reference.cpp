@@ -100,7 +100,7 @@ int test(float &&f, short &&s) {
 // CHECK-NEXT: | |-CXXRecordDecl [[ADDR_2:0x[a-z0-9]*]] <col:22, col:66> col:29 struct remove_reference definition
 // CHECK-NEXT: | | |-DefinitionData empty aggregate standard_layout trivially_copyable pod trivial literal has_constexpr_non_copy_move_ctor can_const_default_init
 // CHECK-NEXT: | | | |-DefaultConstructor exists trivial constexpr needs_implicit defaulted_is_constexpr
-// CHECK-NEXT: | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT: | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT: | | | |-CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: | | | |-MoveAssignment exists simple trivial needs_implicit
@@ -112,7 +112,7 @@ int test(float &&f, short &&s) {
 // CHECK-NEXT: | |-ClassTemplateSpecializationDecl [[ADDR_6:0x[a-z0-9]*]] <line:6:1, col:73> col:29 struct remove_reference definition
 // CHECK-NEXT: | | |-DefinitionData pass_in_registers empty aggregate standard_layout trivially_copyable pod trivial literal has_constexpr_non_copy_move_ctor can_const_default_init
 // CHECK-NEXT: | | | |-DefaultConstructor exists trivial constexpr needs_implicit defaulted_is_constexpr
-// CHECK-NEXT: | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT: | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT: | | | |-CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: | | | |-MoveAssignment exists simple trivial needs_implicit
@@ -128,7 +128,7 @@ int test(float &&f, short &&s) {
 // CHECK-NEXT: | `-ClassTemplateSpecializationDecl [[ADDR_14:0x[a-z0-9]*]] <col:1, col:73> col:29 struct remove_reference definition
 // CHECK-NEXT: |   |-DefinitionData pass_in_registers empty aggregate standard_layout trivially_copyable pod trivial literal has_constexpr_non_copy_move_ctor can_const_default_init
 // CHECK-NEXT: |   | |-DefaultConstructor exists trivial constexpr needs_implicit defaulted_is_constexpr
-// CHECK-NEXT: |   | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT: |   | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: |   | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT: |   | |-CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: |   | |-MoveAssignment exists simple trivial needs_implicit
@@ -144,7 +144,7 @@ int test(float &&f, short &&s) {
 // CHECK-NEXT: |-ClassTemplatePartialSpecializationDecl [[ADDR_20:0x[a-z0-9]*]] <col:1, col:73> col:29 struct remove_reference definition
 // CHECK-NEXT: | |-DefinitionData empty aggregate standard_layout trivially_copyable pod trivial literal has_constexpr_non_copy_move_ctor can_const_default_init
 // CHECK-NEXT: | | |-DefaultConstructor exists trivial constexpr needs_implicit defaulted_is_constexpr
-// CHECK-NEXT: | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT: | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT: | | |-CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: | | |-MoveAssignment exists simple trivial needs_implicit
@@ -160,7 +160,7 @@ int test(float &&f, short &&s) {
 // CHECK-NEXT: |-ClassTemplatePartialSpecializationDecl [[ADDR_25:0x[a-z0-9]*]] <line:7:1, col:74> col:29 struct remove_reference definition
 // CHECK-NEXT: | |-DefinitionData empty aggregate standard_layout trivially_copyable pod trivial literal has_constexpr_non_copy_move_ctor can_const_default_init
 // CHECK-NEXT: | | |-DefaultConstructor exists trivial constexpr needs_implicit defaulted_is_constexpr
-// CHECK-NEXT: | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT: | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT: | | |-CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: | | |-MoveAssignment exists simple trivial needs_implicit

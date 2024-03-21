@@ -255,7 +255,7 @@ namespace Std {
 // CHECK-DUMP:        ClassTemplateSpecializationDecl {{.*}} SomeTemplate definition
 // CHECK-DUMP-NEXT:     DefinitionData
 // CHECK-DUMP-NEXT:       DefaultConstructor
-// CHECK-DUMP-NEXT:       CopyConstructor
+// CHECK-DUMP-NEXT:       NonConstCopyConstructor
 // CHECK-DUMP-NEXT:       MoveConstructor
 // CHECK-DUMP-NEXT:       CopyAssignment
 // CHECK-DUMP-NEXT:       MoveAssignment
@@ -266,7 +266,7 @@ namespace Std {
 // CHECK-DUMP:        ClassTemplateSpecializationDecl {{.*}} SomeTemplate definition
 // CHECK-DUMP-NEXT:     DefinitionData
 // CHECK-DUMP-NEXT:       DefaultConstructor
-// CHECK-DUMP-NEXT:       CopyConstructor
+// CHECK-DUMP-NEXT:       NonConstCopyConstructor
 // CHECK-DUMP-NEXT:       MoveConstructor
 // CHECK-DUMP-NEXT:       CopyAssignment
 // CHECK-DUMP-NEXT:       MoveAssignment

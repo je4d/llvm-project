@@ -74,60 +74,60 @@ struct DefaultedDefaultConstructorIsNotConstexpr {
 
 struct SimpleCopyConstructor {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+3]]:1> line:[[@LINE-1]]:8 struct SimpleCopyConstructor definition
-  // CHECK: CopyConstructor {{.*}}simple{{.*}}
+  // CHECK: NonConstCopyConstructor {{.*}}simple{{.*}}
   int i = 12;
 };
 
 struct NotSimpleCopyConstructor {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+3]]:1> line:[[@LINE-1]]:8 struct NotSimpleCopyConstructor definition
-  // CHECK-NOT: CopyConstructor {{.*}}simple{{.*}}
+  // CHECK-NOT: NonConstCopyConstructor {{.*}}simple{{.*}}
   NotSimpleCopyConstructor(const NotSimpleCopyConstructor&) = delete;
 };
 
 struct TrivialCopyConstructor {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+3]]:1> line:[[@LINE-1]]:8 struct TrivialCopyConstructor definition
-  // CHECK: CopyConstructor {{.*}} trivial{{.*}}
+  // CHECK: NonConstCopyConstructor {{.*}} trivial{{.*}}
   TrivialCopyConstructor() = default;
 };
 
 struct NontrivialCopyConstructor {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+3]]:1> line:[[@LINE-1]]:8 struct NontrivialCopyConstructor definition
-  // CHECK: CopyConstructor {{.*}}non_trivial{{.*}}
+  // CHECK: NonConstCopyConstructor {{.*}}non_trivial{{.*}}
   NontrivialCopyConstructor(const NontrivialCopyConstructor&) {}
 };
 
 struct UserDeclaredCopyConstructor {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+3]]:1> line:[[@LINE-1]]:8 struct UserDeclaredCopyConstructor definition
-  // CHECK: CopyConstructor {{.*}}user_declared{{.*}}
+  // CHECK: NonConstCopyConstructor {{.*}}user_declared{{.*}}
   UserDeclaredCopyConstructor(const UserDeclaredCopyConstructor&) {}
 };
 
 struct NonUserDeclaredCopyConstructor {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+2]]:1> line:[[@LINE-1]]:8 struct NonUserDeclaredCopyConstructor definition
-  // CHECK-NOT: CopyConstructor {{.*}}user_declared{{.*}}
+  // CHECK-NOT: NonConstCopyConstructor {{.*}}user_declared{{.*}}
 };
 
 struct CopyConstructorHasConstParam {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+3]]:1> line:[[@LINE-1]]:8 struct CopyConstructorHasConstParam definition
-  // CHECK: CopyConstructor {{.*}}has_const_param{{.*}}
+  // CHECK: NonConstCopyConstructor {{.*}}has_const_param{{.*}}
   CopyConstructorHasConstParam(const CopyConstructorHasConstParam&) {}
 };
 
 struct CopyConstructorDoesNotHaveConstParam {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+3]]:1> line:[[@LINE-1]]:8 struct CopyConstructorDoesNotHaveConstParam definition
-  // CHECK-NOT: CopyConstructor {{.*}} has_const_param{{.*}}
+  // CHECK-NOT: NonConstCopyConstructor {{.*}} has_const_param{{.*}}
   CopyConstructorDoesNotHaveConstParam(CopyConstructorDoesNotHaveConstParam&) {}
 };
 
 struct NeedsImplicitCopyConstructor {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+3]]:1> line:[[@LINE-1]]:8 struct NeedsImplicitCopyConstructor definition
-  // CHECK: CopyConstructor {{.*}}needs_implicit{{.*}}
+  // CHECK: NonConstCopyConstructor {{.*}}needs_implicit{{.*}}
   int i = 12;
 };
 
 struct DoesNotNeedImplicitCopyConstructor {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+3]]:1> line:[[@LINE-1]]:8 struct DoesNotNeedImplicitCopyConstructor definition
-  // CHECK-NOT: CopyConstructor {{.*}}needs_implicit{{.*}}
+  // CHECK-NOT: NonConstCopyConstructor {{.*}}needs_implicit{{.*}}
   DoesNotNeedImplicitCopyConstructor(const DoesNotNeedImplicitCopyConstructor&) {}
 };
 
@@ -138,24 +138,24 @@ private:
 
 struct CopyConstructorNeedsOverloadResolution : virtual DeletedDestructor {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+2]]:1> line:[[@LINE-1]]:8 struct CopyConstructorNeedsOverloadResolution definition
-  // CHECK: CopyConstructor {{.*}}needs_overload_resolution{{.*}}
+  // CHECK: NonConstCopyConstructor {{.*}}needs_overload_resolution{{.*}}
 };
 
 struct CopyConstructorDoesNotNeedOverloadResolution {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+2]]:1> line:[[@LINE-1]]:8 struct CopyConstructorDoesNotNeedOverloadResolution definition
-  // CHECK-NOT: CopyConstructor {{.*}}needs_overload_resolution{{.*}}
+  // CHECK-NOT: NonConstCopyConstructor {{.*}}needs_overload_resolution{{.*}}
 };
 
 struct DefaultedCopyConstructorIsDeleted {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+4]]:1> line:[[@LINE-1]]:8 struct DefaultedCopyConstructorIsDeleted definition
-  // CHECK: CopyConstructor {{.*}}defaulted_is_deleted{{.*}}
+  // CHECK: NonConstCopyConstructor {{.*}}defaulted_is_deleted{{.*}}
   int &&i;
   DefaultedCopyConstructorIsDeleted(const DefaultedCopyConstructorIsDeleted&) = default;
 };
 
 struct DefaultedCopyConstructorIsNotDeleted {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+4]]:1> line:[[@LINE-1]]:8 struct DefaultedCopyConstructorIsNotDeleted definition
-  // CHECK-NOT: CopyConstructor {{.*}}defaulted_is_deleted{{.*}}
+  // CHECK-NOT: NonConstCopyConstructor {{.*}}defaulted_is_deleted{{.*}}
   int i;
   DefaultedCopyConstructorIsNotDeleted(const DefaultedCopyConstructorIsNotDeleted&) = default;
 };
@@ -166,12 +166,12 @@ struct BaseWithoutCopyConstructorConstParam {
 
 struct ImplicitCopyConstructorHasConstParam {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+2]]:1> line:[[@LINE-1]]:8 struct ImplicitCopyConstructorHasConstParam definition
-  // CHECK: CopyConstructor {{.*}}implicit_has_const_param{{.*}}
+  // CHECK: NonConstCopyConstructor {{.*}}implicit_has_const_param{{.*}}
 };
 
 struct ImplicitCopyConstructorDoesNotHaveConstParam : BaseWithoutCopyConstructorConstParam {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+2]]:1> line:[[@LINE-1]]:8 struct ImplicitCopyConstructorDoesNotHaveConstParam definition
-  // CHECK-NOT: CopyConstructor {{.*}}implicit_has_const_param{{.*}}
+  // CHECK-NOT: NonConstCopyConstructor {{.*}}implicit_has_const_param{{.*}}
 };
 
 struct MoveConstructorExists {

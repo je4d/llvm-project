@@ -108,7 +108,7 @@ void UseOnlyPackAnnotations() {
 // CHECK-NEXT:   CXXRecordDecl {{.*}} struct AnnotatedPackTemplateStruct definition
 // CHECK-NEXT:     DefinitionData
 // CHECK-NEXT:       DefaultConstructor
-// CHECK-NEXT:       CopyConstructor
+// CHECK-NEXT:       NonConstCopyConstructor
 // CHECK-NEXT:       MoveConstructor
 // CHECK-NEXT:       CopyAssignment
 // CHECK-NEXT:       MoveAssignment
@@ -120,7 +120,7 @@ void UseOnlyPackAnnotations() {
 // CHECK-NEXT:   ClassTemplateSpecializationDecl {{.*}} struct AnnotatedPackTemplateStruct definition
 // CHECK-NEXT:     DefinitionData
 // CHECK-NEXT:       DefaultConstructor
-// CHECK-NEXT:       CopyConstructor
+// CHECK-NEXT:       NonConstCopyConstructor
 // CHECK-NEXT:       MoveConstructor
 // CHECK-NEXT:       CopyAssignment
 // CHECK-NEXT:       MoveAssignment
@@ -151,7 +151,7 @@ void UseOnlyPackAnnotations() {
 // CHECK-NEXT:   ClassTemplateSpecializationDecl {{.*}} struct AnnotatedPackTemplateStruct definition
 // CHECK-NEXT:     DefinitionData
 // CHECK-NEXT:       DefaultConstructor
-// CHECK-NEXT:       CopyConstructor
+// CHECK-NEXT:       NonConstCopyConstructor
 // CHECK-NEXT:       MoveConstructor
 // CHECK-NEXT:       CopyAssignment
 // CHECK-NEXT:       MoveAssignment
@@ -176,7 +176,7 @@ void UseOnlyPackAnnotations() {
 // CHECK-NEXT:   ClassTemplateSpecializationDecl {{.*}} struct AnnotatedPackTemplateStruct definition
 // CHECK-NEXT:     DefinitionData
 // CHECK-NEXT:       DefaultConstructor
-// CHECK-NEXT:       CopyConstructor
+// CHECK-NEXT:       NonConstCopyConstructor
 // CHECK-NEXT:       MoveConstructor
 // CHECK-NEXT:       CopyAssignment
 // CHECK-NEXT:       MoveAssignment
@@ -207,7 +207,7 @@ void UseOnlyPackAnnotations() {
 // CHECK-NEXT:   ClassTemplateSpecializationDecl {{.*}} struct AnnotatedPackTemplateStruct definition
 // CHECK-NEXT:     DefinitionData
 // CHECK-NEXT:       DefaultConstructor
-// CHECK-NEXT:       CopyConstructor
+// CHECK-NEXT:       NonConstCopyConstructor
 // CHECK-NEXT:       MoveConstructor
 // CHECK-NEXT:       CopyAssignment
 // CHECK-NEXT:       MoveAssignment
@@ -222,7 +222,7 @@ void UseOnlyPackAnnotations() {
 // CHECK-NEXT:   ClassTemplateSpecializationDecl {{.*}} struct AnnotatedPackTemplateStruct definition
 // CHECK-NEXT:     DefinitionData
 // CHECK-NEXT:       DefaultConstructor
-// CHECK-NEXT:       CopyConstructor
+// CHECK-NEXT:       NonConstCopyConstructor
 // CHECK-NEXT:       MoveConstructor
 // CHECK-NEXT:       CopyAssignment
 // CHECK-NEXT:       MoveAssignment
@@ -234,7 +234,7 @@ void UseOnlyPackAnnotations() {
 // CHECK-NEXT: ClassTemplatePartialSpecializationDecl {{.*}} struct AnnotatedPackTemplateStruct definition
 // CHECK-NEXT:   DefinitionData
 // CHECK-NEXT:     DefaultConstructor
-// CHECK-NEXT:     CopyConstructor
+// CHECK-NEXT:     NonConstCopyConstructor
 // CHECK-NEXT:     MoveConstructor
 // CHECK-NEXT:     CopyAssignment
 // CHECK-NEXT:     MoveAssignment
@@ -253,7 +253,7 @@ void UseOnlyPackAnnotations() {
 // CHECK-NEXT: ClassTemplatePartialSpecializationDecl {{.*}} struct AnnotatedPackTemplateStruct definition
 // CHECK-NEXT:   DefinitionData
 // CHECK-NEXT:     DefaultConstructor
-// CHECK-NEXT:     CopyConstructor
+// CHECK-NEXT:     NonConstCopyConstructor
 // CHECK-NEXT:     MoveConstructor
 // CHECK-NEXT:     CopyAssignment
 // CHECK-NEXT:     MoveAssignment
@@ -294,7 +294,7 @@ void UseAnnotatedPackTemplateStructSpecializations() {
 // CHECK-NEXT:   CXXRecordDecl {{.*}} struct InvalidAnnotatedPackTemplateStruct definition
 // CHECK-NEXT:     DefinitionData
 // CHECK-NEXT:       DefaultConstructor
-// CHECK-NEXT:       CopyConstructor
+// CHECK-NEXT:       NonConstCopyConstructor
 // CHECK-NEXT:       MoveConstructor
 // CHECK-NEXT:       CopyAssignment
 // CHECK-NEXT:       MoveAssignment
@@ -304,7 +304,7 @@ void UseAnnotatedPackTemplateStructSpecializations() {
 // CHECK-NEXT:   ClassTemplateSpecializationDecl {{.*}} struct InvalidAnnotatedPackTemplateStruct definition
 // CHECK-NEXT:     DefinitionData
 // CHECK-NEXT:       DefaultConstructor
-// CHECK-NEXT:       CopyConstructor
+// CHECK-NEXT:       NonConstCopyConstructor
 // CHECK-NEXT:       MoveConstructor
 // CHECK-NEXT:       CopyAssignment
 // CHECK-NEXT:       MoveAssignment
@@ -335,7 +335,7 @@ void UseAnnotatedPackTemplateStructSpecializations() {
 // CHECK-NEXT:   ClassTemplateSpecializationDecl {{.*}} struct InvalidAnnotatedPackTemplateStruct definition
 // CHECK-NEXT:     DefinitionData
 // CHECK-NEXT:       DefaultConstructor
-// CHECK-NEXT:       CopyConstructor
+// CHECK-NEXT:       NonConstCopyConstructor
 // CHECK-NEXT:       MoveConstructor
 // CHECK-NEXT:       CopyAssignment
 // CHECK-NEXT:       MoveAssignment
@@ -350,7 +350,7 @@ void UseAnnotatedPackTemplateStructSpecializations() {
 // CHECK-NEXT:   ClassTemplateSpecializationDecl {{.*}} struct InvalidAnnotatedPackTemplateStruct definition
 // CHECK-NEXT:     DefinitionData
 // CHECK-NEXT:       DefaultConstructor
-// CHECK-NEXT:       CopyConstructor
+// CHECK-NEXT:       NonConstCopyConstructor
 // CHECK-NEXT:       MoveConstructor
 // CHECK-NEXT:       CopyAssignment
 // CHECK-NEXT:       MoveAssignment
@@ -365,7 +365,7 @@ void UseAnnotatedPackTemplateStructSpecializations() {
 // CHECK-NEXT:   ClassTemplateSpecializationDecl {{.*}} struct InvalidAnnotatedPackTemplateStruct definition
 // CHECK-NEXT:     DefinitionData
 // CHECK-NEXT:       DefaultConstructor
-// CHECK-NEXT:       CopyConstructor
+// CHECK-NEXT:       NonConstCopyConstructor
 // CHECK-NEXT:       MoveConstructor
 // CHECK-NEXT:       CopyAssignment
 // CHECK-NEXT:       MoveAssignment
@@ -377,7 +377,7 @@ void UseAnnotatedPackTemplateStructSpecializations() {
 // CHECK-NEXT: ClassTemplatePartialSpecializationDecl {{.*}} struct InvalidAnnotatedPackTemplateStruct definition
 // CHECK-NEXT:   DefinitionData
 // CHECK-NEXT:     DefaultConstructor
-// CHECK-NEXT:     CopyConstructor
+// CHECK-NEXT:     NonConstCopyConstructor
 // CHECK-NEXT:     MoveConstructor
 // CHECK-NEXT:     CopyAssignment
 // CHECK-NEXT:     MoveAssignment
@@ -396,7 +396,7 @@ void UseAnnotatedPackTemplateStructSpecializations() {
 // CHECK-NEXT: ClassTemplatePartialSpecializationDecl {{.*}} struct InvalidAnnotatedPackTemplateStruct definition
 // CHECK-NEXT:   DefinitionData
 // CHECK-NEXT:     DefaultConstructor
-// CHECK-NEXT:     CopyConstructor
+// CHECK-NEXT:     NonConstCopyConstructor
 // CHECK-NEXT:     MoveConstructor
 // CHECK-NEXT:     CopyAssignment
 // CHECK-NEXT:     MoveAssignment
@@ -412,7 +412,7 @@ void UseAnnotatedPackTemplateStructSpecializations() {
 // CHECK-NEXT: ClassTemplateSpecializationDecl {{.*}} struct InvalidAnnotatedPackTemplateStruct definition
 // CHECK-NEXT:   DefinitionData
 // CHECK-NEXT:     DefaultConstructor
-// CHECK-NEXT:     CopyConstructor
+// CHECK-NEXT:     NonConstCopyConstructor
 // CHECK-NEXT:     MoveConstructor
 // CHECK-NEXT:     CopyAssignment
 // CHECK-NEXT:     MoveAssignment

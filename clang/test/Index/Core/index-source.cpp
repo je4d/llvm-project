@@ -7,7 +7,7 @@ class Cls { public:
   // CHECK-NEXT: RelChild | Cls | c:@S@Cls
   // CHECK: [[@LINE+1]]:3 | class/C++ | Cls | c:@S@Cls | <no-cgname> | Ref,RelCont,NameReference | rel: 1
   Cls(int x);
-  // CHECK: [[@LINE+2]]:3 | constructor/cxx-copy-ctor/C++ | Cls | c:@S@Cls@F@Cls#&1$@S@Cls# | __ZN3ClsC1ERKS_ | Decl,RelChild | rel: 1
+  // CHECK: [[@LINE+2]]:3 | constructor/cxx-non-const-copy-ctor/C++ | Cls | c:@S@Cls@F@Cls#&1$@S@Cls# | __ZN3ClsC1ERKS_ | Decl,RelChild | rel: 1
   // CHECK: [[@LINE+1]]:3 | class/C++ | Cls | c:@S@Cls | <no-cgname> | Ref,RelCont,NameReference | rel: 1
   Cls(const Cls &);
   // CHECK: [[@LINE+2]]:3 | constructor/cxx-move-ctor/C++ | Cls | c:@S@Cls@F@Cls#&&$@S@Cls# | __ZN3ClsC1EOS_ | Decl,RelChild | rel: 1
@@ -391,7 +391,7 @@ struct IndexDefaultValue {
 
 struct DeletedMethods {
   DeletedMethods(const DeletedMethods &) = delete;
-// CHECK: [[@LINE-1]]:3 | constructor/cxx-copy-ctor/C++ | DeletedMethods | c:@S@DeletedMethods@F@DeletedMethods#&1$@S@DeletedMethods# | __ZN14DeletedMethodsC1ERKS_ | Def,RelChild | rel: 1
+// CHECK: [[@LINE-1]]:3 | constructor/cxx-non-const-copy-ctor/C++ | DeletedMethods | c:@S@DeletedMethods@F@DeletedMethods#&1$@S@DeletedMethods# | __ZN14DeletedMethodsC1ERKS_ | Def,RelChild | rel: 1
 // CHECK: RelChild | DeletedMethods | c:@S@DeletedMethods
 // CHECK: [[@LINE-3]]:24 | struct/C++ | DeletedMethods | c:@S@DeletedMethods | <no-cgname> | Ref,RelCont | rel: 1
 // CHECK: [[@LINE-4]]:3 | struct/C++ | DeletedMethods | c:@S@DeletedMethods | <no-cgname> | Ref,RelCont,NameReference | rel: 1
