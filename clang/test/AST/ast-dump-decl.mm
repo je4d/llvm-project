@@ -33,7 +33,8 @@
 // CHECK-NEXT:   CXXRecordDecl{{.*}} struct X definition
 // CHECK-NEXT:     DefinitionData
 // CHECK-NEXT:       DefaultConstructor
-// CHECK-NEXT:       CopyConstructor
+// CHECK-NEXT:       NonConstCopyConstructor
+// CHECK-NEXT:       ConstCopyConstructor
 // CHECK-NEXT:       MoveConstructor
 // CHECK-NEXT:       CopyAssignment
 // CHECK-NEXT:       MoveAssignment

@@ -49,7 +49,7 @@ int test() {
 // CHECK-NEXT: | |-CXXRecordDecl [[ADDR_2:0x[a-z0-9]*]] <col:23, line:7:1> line:5:30 struct S definition
 // CHECK-NEXT: | | |-DefinitionData empty standard_layout trivially_copyable has_user_declared_ctor can_const_default_init
 // CHECK-NEXT: | | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT: | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT: | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT: | | | |-CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: | | | |-MoveAssignment exists simple trivial needs_implicit
@@ -62,7 +62,7 @@ int test() {
 // CHECK-NEXT: | |-ClassTemplateSpecializationDecl [[ADDR_8:0x[a-z0-9]*]] <line:5:1, line:7:1> line:5:30 struct S definition
 // CHECK-NEXT: | | |-DefinitionData pass_in_registers empty standard_layout trivially_copyable has_user_declared_ctor can_const_default_init
 // CHECK-NEXT: | | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT: | | | |-CopyConstructor simple trivial has_const_param implicit_has_const_param
+// CHECK-NEXT: | | | |-NonConstCopyConstructor simple trivial has_const_param implicit_has_const_param
 // CHECK-NEXT: | | | |-MoveConstructor exists simple trivial
 // CHECK-NEXT: | | | |-CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: | | | |-MoveAssignment exists simple trivial needs_implicit

@@ -2015,7 +2015,7 @@ def warn_call_to_pure_virtual_member_function_from_ctor_dtor : Warning<
   "%select{constructor|destructor}1 of %2">, InGroup<PureVirtualCallFromCtorDtor>;
 
 def select_special_member_kind : TextSubstitution<
-  "%select{default constructor|copy constructor|move constructor|"
+  "%select{default constructor|copy constructor|const copy constructor|move constructor|"
   "copy assignment operator|move assignment operator|destructor}0">;
 
 def note_member_declared_at : Note<"member is declared here">;
@@ -4690,6 +4690,7 @@ def select_ovl_candidate_kind : TextSubstitution<
   "%select{function|function|function (with reversed parameter order)|"
     "constructor|"
     "constructor (the implicit default constructor)|"
+    "constructor (the implicit const copy constructor)|"
     "constructor (the implicit copy constructor)|"
     "constructor (the implicit move constructor)|"
     "function (the implicit copy assignment operator)|"
@@ -5926,14 +5927,15 @@ def note_enforce_read_only_placement : Note<"type was declared read-only here">;
 def note_deleted_dtor_no_operator_delete : Note<
   "virtual destructor requires an unambiguous, accessible 'operator delete'">;
 def note_deleted_special_member_class_subobject : Note<
-  "%select{default constructor of|copy constructor of|move constructor of|"
-  "copy assignment operator of|move assignment operator of|destructor of|"
-  "constructor inherited by}0 "
+  "%select{default constructor of|copy constructor of|"
+  "const copy constructor of|move constructor of|copy assignment operator of|"
+  "move assignment operator of|destructor of|constructor inherited by}0 "
   "%1 is implicitly deleted because "
   "%select{base class %3|%select{||||variant }4field %3}2 "
   "%select{has "
   "%select{no|a deleted|multiple|an inaccessible|a non-trivial}4 "
-  "%select{%select{default constructor|copy constructor|move constructor|copy "
+  "%select{%select{default constructor|copy constructor|"
+  "const copy constructor|move constructor|copy "
   "assignment operator|move assignment operator|destructor|"
   "%select{default|corresponding|default|default|default}4 constructor}0|"
   "destructor}5"

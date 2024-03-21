@@ -4,7 +4,7 @@
 // CHECK: CXXRecordDecl 0x{{[0-9A-Fa-f]+}} <<invalid sloc>> <invalid sloc> implicit <undeserialized declarations> class Resource definition
 // CHECK-NEXT: DefinitionData
 // CHECK-NEXT: DefaultConstructor exists trivial needs_implicit
-// CHECK-NEXT: CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT: NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT: CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: MoveAssignment exists simple trivial needs_implicit
