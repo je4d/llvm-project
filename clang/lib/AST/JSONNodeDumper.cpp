@@ -429,13 +429,13 @@ static llvm::json::Object
 createNonConstCopyConstructorDefinitionData(const CXXRecordDecl *RD) {
   llvm::json::Object Ret;
 
-  FIELD2("simple", hasSimpleNonConstCopyConstructor);
+  FIELD2("simple", hasSimpleCopyConstructor);
   FIELD2("trivial", hasTrivialNonConstCopyConstructor);
   FIELD2("nonTrivial", hasNonTrivialNonConstCopyConstructor);
   FIELD2("userDeclared", hasUserDeclaredNonConstCopyConstructor);
   FIELD2("hasConstParam", hasNonConstCopyConstructorWithConstParam);
   FIELD2("implicitHasConstParam", implicitNonConstCopyConstructorHasConstParam);
-  FIELD2("needsImplicit", needsImplicitCopyConstructor);
+  FIELD2("needsImplicit", needsImplicitNonConstCopyConstructor);
   FIELD2("needsOverloadResolution", needsOverloadResolutionForCopyConstructor);
   if (!RD->needsOverloadResolutionForCopyConstructor())
     FIELD2("defaultedIsDeleted", defaultedNonConstCopyConstructorIsDeleted);
@@ -447,13 +447,12 @@ static llvm::json::Object
 createConstCopyConstructorDefinitionData(const CXXRecordDecl *RD) {
   llvm::json::Object Ret;
 
-  FIELD2("simple", hasSimpleConstCopyConstructor);
   FIELD2("trivial", hasTrivialConstCopyConstructor);
   FIELD2("nonTrivial", hasNonTrivialConstCopyConstructor);
   FIELD2("userDeclared", hasUserDeclaredConstCopyConstructor);
   FIELD2("hasConstParam", hasConstCopyConstructorWithConstParam);
-  FIELD2("implicitCanExist", implicitConstCopyConstructorCanExist);
-  FIELD2("needsImplicit", needsImplicitCopyConstructor);
+  FIELD2("implicitHasConstParam", implicitConstCopyConstructorHasConstParam);
+  FIELD2("needsImplicit", needsImplicitConstCopyConstructor);
   FIELD2("needsOverloadResolution", needsOverloadResolutionForCopyConstructor);
   if (!RD->needsOverloadResolutionForCopyConstructor())
     FIELD2("defaultedIsDeleted", defaultedConstCopyConstructorIsDeleted);

@@ -1012,13 +1012,13 @@ void Sema::ForceDeclarationOfImplicitMembers(CXXRecordDecl *Class) {
   if (Class->needsImplicitDefaultConstructor())
     DeclareImplicitDefaultConstructor(Class);
 
-  // If the copy constructor has not yet been declared, do so now.
-  if (Class->needsImplicitCopyConstructor())
-  {
+  // If the non-const copy constructor has not yet been declared, do so now.
+  if (Class->needsImplicitNonConstCopyConstructor())
     DeclareImplicitCopyConstructor(Class, 0);
-    if (!Class->implicitNonConstCopyConstructorHasConstParam())
-      DeclareImplicitCopyConstructor(Class, Qualifiers::Const);
-  }
+
+  // If the const copy constructor has not yet been declared, do so now.
+  if (Class->needsImplicitConstCopyConstructor())
+    DeclareImplicitCopyConstructor(Class, Qualifiers::Const);
 
   // If the copy assignment operator has not yet been declared, do so now.
   if (Class->needsImplicitCopyAssignment())
@@ -1073,11 +1073,10 @@ static void DeclareImplicitMemberFunctionsWithName(Sema &S,
         CXXRecordDecl *Class = const_cast<CXXRecordDecl *>(Record);
         if (Record->needsImplicitDefaultConstructor())
           S.DeclareImplicitDefaultConstructor(Class);
-        if (Record->needsImplicitCopyConstructor()) {
+        if (Record->needsImplicitNonConstCopyConstructor())
           S.DeclareImplicitCopyConstructor(Class, 0);
-          if (!Record->implicitNonConstCopyConstructorHasConstParam())
-            S.DeclareImplicitCopyConstructor(Class, Qualifiers::Const);
-        }
+        if (Record->needsImplicitConstCopyConstructor())
+          S.DeclareImplicitCopyConstructor(Class, Qualifiers::Const);
         if (S.getLangOpts().CPlusPlus11 &&
             Record->needsImplicitMoveConstructor())
           S.DeclareImplicitMoveConstructor(Class);
@@ -3424,11 +3423,14 @@ Sema::SpecialMemberOverloadResult Sema::LookupSpecialMember(CXXRecordDecl *RD,
   } else {
     if (SM == CXXNonConstCopyConstructor || SM == CXXConstCopyConstructor || SM == CXXMoveConstructor) {
       Name = Context.DeclarationNames.getCXXConstructorName(CanTy);
-      if (RD->needsImplicitCopyConstructor()) {
+      if (RD->needsImplicitNonConstCopyConstructor()) {
         runWithSufficientStackSpace(RD->getLocation(), [&] {
           DeclareImplicitCopyConstructor(RD, 0);
-          if (!RD->implicitNonConstCopyConstructorHasConstParam())
-            DeclareImplicitCopyConstructor(RD, Qualifiers::Const);
+        });
+      }
+      if (getLangOpts().CPlusPlus2b && RD->needsImplicitConstCopyConstructor()) {
+        runWithSufficientStackSpace(RD->getLocation(), [&] {
+          DeclareImplicitCopyConstructor(RD, Qualifiers::Const);
         });
       }
       if (getLangOpts().CPlusPlus11 && RD->needsImplicitMoveConstructor()) {
@@ -3612,12 +3614,10 @@ DeclContext::lookup_result Sema::LookupConstructors(CXXRecordDecl *Class) {
     runWithSufficientStackSpace(Class->getLocation(), [&] {
       if (Class->needsImplicitDefaultConstructor())
         DeclareImplicitDefaultConstructor(Class);
-      if (Class->needsImplicitCopyConstructor())
-      {
+      if (Class->needsImplicitNonConstCopyConstructor())
         DeclareImplicitCopyConstructor(Class, 0);
-        if ((!Class->implicitNonConstCopyConstructorHasConstParam()) && Class->implicitConstCopyConstructorCanExist())
-          DeclareImplicitCopyConstructor(Class, Qualifiers::Const);
-      }
+      if (Class->needsImplicitConstCopyConstructor())
+        DeclareImplicitCopyConstructor(Class, Qualifiers::Const);
       if (getLangOpts().CPlusPlus11 && Class->needsImplicitMoveConstructor())
         DeclareImplicitMoveConstructor(Class);
     });

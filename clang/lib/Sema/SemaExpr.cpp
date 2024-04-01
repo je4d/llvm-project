@@ -19661,8 +19661,9 @@ static bool canCaptureVariableByCopy(ValueDecl *Var,
 
     if (!(RD = RD->getDefinition()))
       return false;
-    if (RD->hasSimpleNonConstCopyConstructor() or (not IsMutable and RD->hasSimpleConstCopyConstructor()))
+    if (RD->hasSimpleCopyConstructor())
       return true;
+    // TODO: this is probabaly missing some conditions, see TESTS_TODO
     if (not IsMutable)
       if (RD->hasUserDeclaredConstCopyConstructor())
         for (CXXConstructorDecl *Ctor : RD->ctors())
