@@ -745,14 +745,10 @@ public:
    * - deciding whether we can capture by copy
    * - deciding whether we need overload resolution for the copy ctor
    * */
-  bool hasSimpleNonConstCopyConstructor() const {
+  bool hasSimpleCopyConstructor() const {
     return !hasUserDeclaredNonConstCopyConstructor() &&
+           !hasConstCopyConstructor() &&
            !data().DefaultedNonConstCopyConstructorIsDeleted;
-  }
-
-  bool hasSimpleConstCopyConstructor() const {
-    return !hasUserDeclaredConstCopyConstructor() &&
-           !data().DefaultedConstCopyConstructorIsDeleted;
   }
 
   /// \c true if we know for sure that this class has a single,
@@ -817,6 +813,16 @@ public:
     return data().UserProvidedDefaultConstructor;
   }
 
+  bool hasNonConstCopyConstructor() const {
+    return (data().DeclaredSpecialMembers & SMF_NonConstCopyConstructor) ||
+           needsImplicitNonConstCopyConstructor();
+  }
+
+  bool hasConstCopyConstructor() const {
+    return (data().DeclaredSpecialMembers & SMF_ConstCopyConstructor) ||
+           needsImplicitConstCopyConstructor();
+  }
+
   /// Determine whether this class has a user-declared copy constructor.
   ///
   /// When false, a copy constructor will be implicitly declared.
@@ -828,11 +834,29 @@ public:
     return data().UserDeclaredSpecialMembers & SMF_ConstCopyConstructor;
   }
 
-  /// Determine whether this class needs an implicit copy
+  /// Determine whether this class needs an implicit const copy
   /// constructor to be lazily declared.
-  // TODO: should this be split into const/nonconst?
-  bool needsImplicitCopyConstructor() const {
-    return !(data().DeclaredSpecialMembers & (SMF_NonConstCopyConstructor|SMF_ConstCopyConstructor));
+  bool needsImplicitConstCopyConstructor() const {
+    // Problem: DeclaredSpecialMembers gets mutated as we add the implicit
+    // definitions, so after the non-const one is added this will say "we don't
+    // need an implicit copy ctor", even if we should have one.
+    // DeclareImplicitMemberFunctionsWithName decides whether we need to add
+    // this or not.
+    return !(data().DeclaredSpecialMembers & SMF_ConstCopyConstructor) &&
+           !hasUserDeclaredNonConstCopyConstructor() &&
+           !implicitNonConstCopyConstructorHasConstParam();
+  }
+
+  /// Determine whether this class needs an implicit non-const copy
+  /// constructor to be lazily declared.
+  bool needsImplicitNonConstCopyConstructor() const {
+    // Problem: DeclaredSpecialMembers gets mutated as we add the implicit
+    // definitions, so after the non-const one is added this will say "we don't
+    // need an implicit copy ctor", even if we should have one.
+    // DeclareImplicitMemberFunctionsWithName decides whether we need to add
+    // this or not.
+    return !(data().DeclaredSpecialMembers & SMF_NonConstCopyConstructor) &&
+           !hasUserDeclaredConstCopyConstructor();
   }
 
   /// Determine whether we need to eagerly declare a defaulted copy
@@ -860,26 +884,24 @@ public:
 
   /// Determine whether an implicit const-qualified copy constructor for this type
   /// can exist
-  bool implicitConstCopyConstructorCanExist() const {
-    return data().ImplicitConstCopyConstructorCanExistForNonVBase &&
+  bool implicitConstCopyConstructorHasConstParam() const {
+    return data().ImplicitConstCopyConstructorCanHaveConstParamForNonVBase &&
            (isAbstract() ||
-            data().ImplicitConstCopyConstructorCanExistForVBase);
-  }
-
-  /// Determine whether this class has a non-const copy constructor with
-  /// a parameter type which is a reference to a const-qualified type.
-  bool hasNonConstCopyConstructorWithConstParam() const {
-    return data().HasDeclaredNonConstCopyConstructorWithConstParam ||
-           (needsImplicitCopyConstructor() &&
-            implicitNonConstCopyConstructorHasConstParam());
+            data().ImplicitConstCopyConstructorCanHaveConstParamForVBase);
   }
 
   /// Determine whether this class has a const copy constructor with
   /// a parameter type which is a reference to a const-qualified type.
   bool hasConstCopyConstructorWithConstParam() const {
     return data().HasDeclaredConstCopyConstructorWithConstParam ||
-           (needsImplicitCopyConstructor() &&
-            implicitConstCopyConstructorCanExist());
+           needsImplicitConstCopyConstructor();
+  }
+
+  /// Determine whether this class has a non-const copy constructor with
+  /// a parameter type which is a reference to a const-qualified type.
+  bool hasNonConstCopyConstructorWithConstParam() const {
+    return data().HasDeclaredNonConstCopyConstructorWithConstParam ||
+           needsImplicitNonConstCopyConstructor();
   }
 
   /// Whether this class has a user-declared move constructor or

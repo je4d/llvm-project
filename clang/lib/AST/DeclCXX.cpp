@@ -105,9 +105,9 @@ CXXRecordDecl::DefinitionData::DefinitionData(CXXRecordDecl *D)
       HasNonLiteralTypeFieldsOrBases(false), StructuralIfLiteral(true),
       UserProvidedDefaultConstructor(false), DeclaredSpecialMembers(0),
       ImplicitNonConstCopyConstructorCanHaveConstParamForVBase(true),
-      ImplicitConstCopyConstructorCanExistForVBase(true),
       ImplicitNonConstCopyConstructorCanHaveConstParamForNonVBase(true),
-      ImplicitConstCopyConstructorCanExistForNonVBase(true),
+      ImplicitConstCopyConstructorCanHaveConstParamForVBase(true),
+      ImplicitConstCopyConstructorCanHaveConstParamForNonVBase(true),
       ImplicitCopyAssignmentHasConstParam(true),
       HasDeclaredNonConstCopyConstructorWithConstParam(false),
       HasDeclaredConstCopyConstructorWithConstParam(false),
@@ -309,10 +309,11 @@ CXXRecordDecl::setBases(CXXBaseSpecifier const * const *Bases,
         //   has a copy constructor whose first parameter is of type
         //   'const B&' or 'const volatile B&' [...]
         if (CXXRecordDecl *VBaseDecl = VBase.getType()->getAsCXXRecordDecl()) {
-          if (!VBaseDecl->hasNonConstCopyConstructorWithConstParam())
+          if (!VBaseDecl->hasNonConstCopyConstructorWithConstParam()) {
             data().ImplicitNonConstCopyConstructorCanHaveConstParamForVBase = false;
-          if (!VBaseDecl->hasConstCopyConstructorWithConstParam())
-            data().ImplicitConstCopyConstructorCanExistForVBase = false;
+            if (!VBaseDecl->hasConstCopyConstructorWithConstParam())
+              data().ImplicitConstCopyConstructorCanHaveConstParamForVBase = false;
+          }
         }
 
         // C++1z [dcl.init.agg]p1:
@@ -360,10 +361,11 @@ CXXRecordDecl::setBases(CXXBaseSpecifier const * const *Bases,
       //   the form 'X::X(const X&)' if each potentially constructed subobject
       //   has a copy constructor whose first parameter is of type
       //   'const B&' or 'const volatile B&' [...]
-      if (!BaseClassDecl->hasNonConstCopyConstructorWithConstParam())
+      if (!BaseClassDecl->hasNonConstCopyConstructorWithConstParam()) {
         data().ImplicitNonConstCopyConstructorCanHaveConstParamForVBase = false;
-      if (!BaseClassDecl->hasConstCopyConstructorWithConstParam())
-        data().ImplicitConstCopyConstructorCanExistForVBase = false;
+        if (!BaseClassDecl->hasConstCopyConstructorWithConstParam())
+          data().ImplicitConstCopyConstructorCanHaveConstParamForVBase = false;
+      }
     } else {
       // C++ [class.ctor]p5:
       //   A default constructor is trivial [...] if:
@@ -426,10 +428,11 @@ CXXRecordDecl::setBases(CXXBaseSpecifier const * const *Bases,
       //   the form 'X::X(const X&)' if each potentially constructed subobject
       //   has a copy constructor whose first parameter is of type
       //   'const B&' or 'const volatile B&' [...]
-      if (!BaseClassDecl->hasNonConstCopyConstructorWithConstParam())
+      if (!BaseClassDecl->hasNonConstCopyConstructorWithConstParam()) {
         data().ImplicitNonConstCopyConstructorCanHaveConstParamForNonVBase = false;
-      if (!BaseClassDecl->hasConstCopyConstructorWithConstParam())
-        data().ImplicitConstCopyConstructorCanExistForNonVBase = false;
+        if (!BaseClassDecl->hasConstCopyConstructorWithConstParam())
+          data().ImplicitConstCopyConstructorCanHaveConstParamForNonVBase = false;
+      }
     }
 
     // C++ [class.ctor]p3:
@@ -531,12 +534,7 @@ void CXXRecordDecl::addedClassSubobject(CXXRecordDecl *Subobj) {
   //    -- a direct or virtual base class B that cannot be copied/moved [...]
   //    -- a non-static data member of class type M (or array thereof)
   //       that cannot be copied or moved [...]
-  if (!Subobj->hasSimpleNonConstCopyConstructor())
-    data().NeedOverloadResolutionForCopyConstructor = true;
-  if (!Subobj->hasSimpleConstCopyConstructor())
-    data().NeedOverloadResolutionForCopyConstructor = true;
-  // XXX: this is a guess
-  if (implicitNonConstCopyConstructorHasConstParam() && implicitConstCopyConstructorCanExist())
+  if (!Subobj->hasSimpleCopyConstructor())
     data().NeedOverloadResolutionForCopyConstructor = true;
   if (!Subobj->hasSimpleMoveConstructor())
     data().NeedOverloadResolutionForMoveConstructor = true;
@@ -1345,10 +1343,11 @@ void CXXRecordDecl::addedMember(Decl *D) {
         //   the form 'X::X(const X&)' if each potentially constructed subobject
         //   of a class type M (or array thereof) has a copy constructor whose
         //   first parameter is of type 'const M&' or 'const volatile M&'.
-        if (!FieldRec->hasNonConstCopyConstructorWithConstParam())
+        if (!FieldRec->hasNonConstCopyConstructorWithConstParam()) {
           data().ImplicitNonConstCopyConstructorCanHaveConstParamForNonVBase = false;
-        if (!FieldRec->hasConstCopyConstructorWithConstParam())
-          data().ImplicitConstCopyConstructorCanExistForNonVBase = false;
+          if (!FieldRec->hasConstCopyConstructorWithConstParam())
+              data().ImplicitConstCopyConstructorCanHaveConstParamForNonVBase = false;
+        }
 
         // C++11 [class.copy]p18:
         //   The implicitly-declared copy assignment oeprator for a class X will

@@ -50,6 +50,7 @@ int test() {
 // CHECK-NEXT: | | |-DefinitionData empty standard_layout trivially_copyable has_user_declared_ctor can_const_default_init
 // CHECK-NEXT: | | | |-DefaultConstructor defaulted_is_constexpr
 // CHECK-NEXT: | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT: | | | |-ConstCopyConstructor trivial implicit_has_const_param
 // CHECK-NEXT: | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT: | | | |-CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: | | | |-MoveAssignment exists simple trivial needs_implicit
@@ -63,6 +64,7 @@ int test() {
 // CHECK-NEXT: | | |-DefinitionData pass_in_registers empty standard_layout trivially_copyable has_user_declared_ctor can_const_default_init
 // CHECK-NEXT: | | | |-DefaultConstructor defaulted_is_constexpr
 // CHECK-NEXT: | | | |-NonConstCopyConstructor simple trivial has_const_param implicit_has_const_param
+// CHECK-NEXT: | | | |-ConstCopyConstructor trivial implicit_has_const_param
 // CHECK-NEXT: | | | |-MoveConstructor exists simple trivial
 // CHECK-NEXT: | | | |-CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT: | | | |-MoveAssignment exists simple trivial needs_implicit

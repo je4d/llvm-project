@@ -2304,12 +2304,12 @@ void TextNodeDumper::VisitCXXRecordDecl(const CXXRecordDecl *D) {
         ColorScope Color(OS, ShowColors, DeclKindNameColor);
         OS << "NonConstCopyConstructor";
       }
-      FLAG(hasSimpleNonConstCopyConstructor, simple);
+      FLAG(hasSimpleCopyConstructor, simple);
       FLAG(hasTrivialNonConstCopyConstructor, trivial);
       FLAG(hasNonTrivialNonConstCopyConstructor, non_trivial);
       FLAG(hasUserDeclaredNonConstCopyConstructor, user_declared);
       FLAG(hasNonConstCopyConstructorWithConstParam, has_const_param);
-      FLAG(needsImplicitCopyConstructor, needs_implicit);
+      FLAG(needsImplicitNonConstCopyConstructor, needs_implicit);
       FLAG(needsOverloadResolutionForCopyConstructor,
            needs_overload_resolution);
       if (!D->needsOverloadResolutionForCopyConstructor())
@@ -2322,17 +2322,16 @@ void TextNodeDumper::VisitCXXRecordDecl(const CXXRecordDecl *D) {
         ColorScope Color(OS, ShowColors, DeclKindNameColor);
         OS << "ConstCopyConstructor";
       }
-      FLAG(hasSimpleConstCopyConstructor, simple);
       FLAG(hasTrivialConstCopyConstructor, trivial);
       FLAG(hasNonTrivialConstCopyConstructor, non_trivial);
       FLAG(hasUserDeclaredConstCopyConstructor, user_declared);
       FLAG(hasConstCopyConstructorWithConstParam, has_const_param);
-      FLAG(needsImplicitCopyConstructor, needs_implicit);
+      FLAG(needsImplicitConstCopyConstructor, needs_implicit);
       FLAG(needsOverloadResolutionForCopyConstructor,
            needs_overload_resolution);
       if (!D->needsOverloadResolutionForCopyConstructor())
         FLAG(defaultedConstCopyConstructorIsDeleted, defaulted_is_deleted);
-      FLAG(implicitConstCopyConstructorCanExist, implicit_can_exist);
+      FLAG(implicitConstCopyConstructorHasConstParam, implicit_has_const_param);
     });
 
     AddChild([=] {

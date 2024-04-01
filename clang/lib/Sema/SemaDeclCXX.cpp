@@ -6898,7 +6898,7 @@ static bool canPassInRegisters(Sema &S, CXXRecordDecl *D,
     // Note: This permits classes with non-trivial copy or move ctors to be
     // passed in registers, so long as they *also* have a trivial copy ctor,
     // which is non-conforming.
-    if (D->needsImplicitCopyConstructor()) {
+    if (D->needsImplicitConstCopyConstructor() || D->needsImplicitNonConstCopyConstructor()) {
       if (!D->defaultedNonConstCopyConstructorIsDeleted()) {
         /* TODO: something with ConstCopyCtor */
         if (D->hasTrivialNonConstCopyConstructor())
@@ -6957,8 +6957,14 @@ static bool canPassInRegisters(Sema &S, CXXRecordDecl *D,
   //   or move constructor
   bool HasNonDeletedCopyOrMove = false;
 
-  /* TODO: something with ConstCopyCtor */
-  if (D->needsImplicitCopyConstructor() &&
+  if (D->needsImplicitConstCopyConstructor() &&
+      !D->defaultedConstCopyConstructorIsDeleted()) {
+    if (!D->hasTrivialConstCopyConstructorForCall())
+      return false;
+    HasNonDeletedCopyOrMove = true;
+  }
+
+  if (D->needsImplicitNonConstCopyConstructor() &&
       !D->defaultedNonConstCopyConstructorIsDeleted()) {
     if (!D->hasTrivialNonConstCopyConstructorForCall())
       return false;
@@ -7761,7 +7767,7 @@ bool Sema::CheckExplicitlyDefaultedSpecialMember(CXXMethodDecl *MD,
   if (CSM == CXXNonConstCopyConstructor)
     CanHaveConstParam = RD->implicitNonConstCopyConstructorHasConstParam();
   else if (CSM == CXXConstCopyConstructor)
-    CanHaveConstParam = RD->implicitConstCopyConstructorCanExist();
+    CanHaveConstParam = RD->implicitConstCopyConstructorHasConstParam();
   else if (CSM == CXXCopyAssignment)
     CanHaveConstParam = RD->implicitCopyAssignmentHasConstParam();
 
@@ -10515,10 +10521,12 @@ void Sema::checkIllFormedTrivialABIStruct(CXXRecordDecl &RD) {
     // implicit copy or move ctor because we won't know yet at this point.
     if (RD.isDependentType())
       return true;
-    if (RD.needsImplicitCopyConstructor() &&
+    if (RD.needsImplicitNonConstCopyConstructor() &&
         !RD.defaultedNonConstCopyConstructorIsDeleted())
       return true;
-    // XXX should we consider the const copy ctor here?
+    if (RD.needsImplicitConstCopyConstructor() &&
+        !RD.defaultedConstCopyConstructorIsDeleted())
+      return true;
     if (RD.needsImplicitMoveConstructor() &&
         !RD.defaultedMoveConstructorIsDeleted())
       return true;
@@ -10652,17 +10660,20 @@ void Sema::AddImplicitlyDeclaredMembersToClass(CXXRecordDecl *ClassDecl) {
         DeclareImplicitDefaultConstructor(ClassDecl);
     }
 
-    if (ClassDecl->needsImplicitCopyConstructor()) {
+    if (ClassDecl->needsImplicitNonConstCopyConstructor() ||
+        ClassDecl->needsImplicitConstCopyConstructor()) {
       ++getASTContext().NumImplicitCopyConstructors;
 
       // If the properties or semantics of the copy constructor couldn't be
       // determined while the class was being declared, force a declaration
       // of it now.
+      // TODO: this is a guess
       if (ClassDecl->needsOverloadResolutionForCopyConstructor() ||
           ClassDecl->hasInheritedConstructor())
       {
-        DeclareImplicitCopyConstructor(ClassDecl, 0);
-        if ((!ClassDecl->implicitNonConstCopyConstructorHasConstParam()) && ClassDecl->implicitConstCopyConstructorCanExist())
+        if (ClassDecl->needsImplicitNonConstCopyConstructor())
+          DeclareImplicitCopyConstructor(ClassDecl, 0);
+        if (ClassDecl->needsImplicitConstCopyConstructor())
           DeclareImplicitCopyConstructor(ClassDecl, Qualifiers::Const);
       }
 
@@ -10675,8 +10686,12 @@ void Sema::AddImplicitlyDeclaredMembersToClass(CXXRecordDecl *ClassDecl) {
                (ClassDecl->hasUserDeclaredMoveConstructor() ||
                 ClassDecl->needsOverloadResolutionForMoveConstructor() ||
                 ClassDecl->hasUserDeclaredMoveAssignment() ||
-                ClassDecl->needsOverloadResolutionForMoveAssignment()))
-        DeclareImplicitCopyConstructor(ClassDecl, 0);
+                ClassDecl->needsOverloadResolutionForMoveAssignment())) {
+        if (ClassDecl->needsImplicitNonConstCopyConstructor())
+          DeclareImplicitCopyConstructor(ClassDecl, 0);
+        if (ClassDecl->needsImplicitConstCopyConstructor())
+          DeclareImplicitCopyConstructor(ClassDecl, Qualifiers::Const);
+      }
     }
 
     if (getLangOpts().CPlusPlus11 &&
@@ -15716,7 +15731,10 @@ CXXConstructorDecl *Sema::DeclareImplicitCopyConstructor(
   // C++ [class.copy]p4:
   //   If the class definition does not explicitly declare a copy
   //   constructor, one is declared implicitly.
-  assert(ClassDecl->needsImplicitCopyConstructor());
+  if (Quals & Qualifiers::Const)
+    assert(ClassDecl->needsImplicitConstCopyConstructor());
+  else
+    assert(ClassDecl->needsImplicitNonConstCopyConstructor());
 
   DeclaringSpecialMember DSM(*this, ClassDecl, CtorType);
   if (DSM.isAlreadyBeingDeclared())

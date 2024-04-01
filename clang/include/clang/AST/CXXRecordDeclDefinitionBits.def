@@ -232,9 +232,9 @@ FIELD(DeclaredSpecialMembers, 7, MERGE_OR)
 /// Whether an implicit copy constructor could have a const-qualified
 /// parameter, for initializing virtual bases and for other subobjects.
 FIELD(ImplicitNonConstCopyConstructorCanHaveConstParamForVBase, 1, NO_MERGE)
-FIELD(ImplicitConstCopyConstructorCanExistForVBase, 1, NO_MERGE)
 FIELD(ImplicitNonConstCopyConstructorCanHaveConstParamForNonVBase, 1, NO_MERGE)
-FIELD(ImplicitConstCopyConstructorCanExistForNonVBase, 1, NO_MERGE)
+FIELD(ImplicitConstCopyConstructorCanHaveConstParamForVBase, 1, NO_MERGE)
+FIELD(ImplicitConstCopyConstructorCanHaveConstParamForNonVBase, 1, NO_MERGE)
 
 /// Whether an implicit copy assignment operator would have a
 /// const-qualified parameter.
