@@ -3872,7 +3872,8 @@ ExpectedDecl ASTNodeImporter::VisitFunctionDecl(FunctionDecl *D) {
     if (GetImportedOrCreateDecl<CXXConstructorDecl>(
             ToFunction, D, Importer.getToContext(), cast<CXXRecordDecl>(DC),
             ToInnerLocStart, NameInfo, T, TInfo, ESpec, D->UsesFPIntrin(),
-            D->isInlineSpecified(), D->isImplicit(), D->getConstexprKind(),
+            D->isInlineSpecified(), D->isImplicit(),
+            FromConstructor->isConstConstructor(), D->getConstexprKind(),
             ToInheritedConstructor, TrailingRequiresClause))
       return ToFunction;
   } else if (CXXDestructorDecl *FromDtor = dyn_cast<CXXDestructorDecl>(D)) {

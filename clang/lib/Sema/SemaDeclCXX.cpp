@@ -10953,7 +10953,7 @@ QualType Sema::CheckConstructorDeclarator(Declarator &D, QualType R,
     SC = SC_None;
   }
 
-  if (unsigned TypeQuals = D.getDeclSpec().getTypeQualifiers()) {
+  if (unsigned TypeQuals = D.getDeclSpec().getTypeQualifiers() & ~Qualifiers::Const) {
     diagnoseIgnoredQualifiers(
         diag::err_constructor_return_type, TypeQuals, SourceLocation(),
         D.getDeclSpec().getConstSpecLoc(), D.getDeclSpec().getVolatileSpecLoc(),
@@ -14082,6 +14082,7 @@ CXXConstructorDecl *Sema::DeclareImplicitDefaultConstructor(
       /*TInfo=*/nullptr, ExplicitSpecifier(),
       getCurFPFeatures().isFPConstrained(),
       /*isInline=*/true, /*isImplicitlyDeclared=*/true,
+      /*isConst=*/false,
       Constexpr ? ConstexprSpecKind::Constexpr
                 : ConstexprSpecKind::Unspecified);
   DefaultCon->setAccess(AS_public);
@@ -14207,6 +14208,7 @@ Sema::findInheritingConstructor(SourceLocation Loc,
       BaseCtor->getExplicitSpecifier(), getCurFPFeatures().isFPConstrained(),
       /*isInline=*/true,
       /*isImplicitlyDeclared=*/true,
+      /*isConst=*/BaseCtor->isConstConstructor(),
       Constexpr ? BaseCtor->getConstexprKind() : ConstexprSpecKind::Unspecified,
       InheritedConstructor(Shadow, BaseCtor),
       BaseCtor->getTrailingRequiresClause());
@@ -15771,6 +15773,7 @@ CXXConstructorDecl *Sema::DeclareImplicitCopyConstructor(
       ExplicitSpecifier(), getCurFPFeatures().isFPConstrained(),
       /*isInline=*/true,
       /*isImplicitlyDeclared=*/true,
+      /*isConst=*/ConstCtor,
       Constexpr ? ConstexprSpecKind::Constexpr
                 : ConstexprSpecKind::Unspecified);
   CopyConstructor->setAccess(AS_public);
@@ -15922,6 +15925,7 @@ CXXConstructorDecl *Sema::DeclareImplicitMoveConstructor(
       ExplicitSpecifier(), getCurFPFeatures().isFPConstrained(),
       /*isInline=*/true,
       /*isImplicitlyDeclared=*/true,
+      /*isConst=*/false,
       Constexpr ? ConstexprSpecKind::Constexpr
                 : ConstexprSpecKind::Unspecified);
   MoveConstructor->setAccess(AS_public);

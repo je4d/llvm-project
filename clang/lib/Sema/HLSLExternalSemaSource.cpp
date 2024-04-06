@@ -163,7 +163,7 @@ struct BuiltinTypeDeclBuilder {
         AST, Record, SourceLocation(),
         DeclarationNameInfo(Name, SourceLocation()), ConstructorType,
         AST.getTrivialTypeSourceInfo(ConstructorType, SourceLocation()),
-        ExplicitSpecifier(), false, true, false,
+        ExplicitSpecifier(), false, true, false, /* isConst= */ false,
         ConstexprSpecKind::Unspecified);
 
     DeclRefExpr *Fn =

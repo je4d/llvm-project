@@ -1064,7 +1064,10 @@ bool Sema::CheckCXXThrowOperand(SourceLocation ThrowLoc,
       // will spring into action, like template instantiation, which means this
       // cannot be a simple walk of the class's decls.  Instead, we must perform
       // lookup and overload resolution.
-      CXXConstructorDecl *CD = LookupCopyingConstructor(Subobject, 0);
+
+      // TODO: the ctor we get here might be different if the exception is caught by const value instead of value
+      // we probably need to do lookup for both const and non-const dest objects
+      CXXConstructorDecl *CD = LookupCopyingConstructor(Subobject, 0, false);
       if (!CD || CD->isDeleted())
         continue;
 

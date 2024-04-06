@@ -9397,10 +9397,11 @@ static FunctionDecl *CreateNewFunctionDecl(Sema &SemaRef, Declarator &D,
            "Constructors can only be declared in a member context");
 
     R = SemaRef.CheckConstructorDeclarator(D, R, SC);
+    bool isConst = D.getDeclSpec().getTypeQualifiers() & DeclSpec::TQ_const;
     return CXXConstructorDecl::Create(
         SemaRef.Context, cast<CXXRecordDecl>(DC), D.getBeginLoc(), NameInfo, R,
         TInfo, ExplicitSpecifier, SemaRef.getCurFPFeatures().isFPConstrained(),
-        isInline, /*isImplicitlyDeclared=*/false, ConstexprKind,
+        isInline, /*isImplicitlyDeclared=*/false, isConst, ConstexprKind,
         InheritedConstructor(), TrailingRequiresClause);
 
   } else if (Name.getNameKind() == DeclarationName::CXXDestructorName) {

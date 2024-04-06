@@ -93,8 +93,9 @@ CXXRecordDecl::DefinitionData::DefinitionData(CXXRecordDecl *D)
       DefaultedMoveConstructorIsDeleted(false),
       DefaultedCopyAssignmentIsDeleted(false),
       DefaultedMoveAssignmentIsDeleted(false),
-      DefaultedDestructorIsDeleted(false), HasTrivialSpecialMembers(SMF_All),
-      HasTrivialSpecialMembersForCall(SMF_All),
+      DefaultedDestructorIsDeleted(false),
+      HasTrivialSpecialMembers(SMF_All),        // TODO: exclude const copy ctor?
+      HasTrivialSpecialMembersForCall(SMF_All), // TODO: exclude const copy ctor?
       DeclaredNonTrivialSpecialMembers(0),
       DeclaredNonTrivialSpecialMembersForCall(0), HasIrrelevantDestructor(true),
       HasConstexprNonCopyMoveConstructor(false),
@@ -535,6 +536,7 @@ void CXXRecordDecl::addedClassSubobject(CXXRecordDecl *Subobj) {
   //    -- a non-static data member of class type M (or array thereof)
   //       that cannot be copied or moved [...]
   if (!Subobj->hasSimpleCopyConstructor())
+    // TODO: review whether this is overly pessimistic
     data().NeedOverloadResolutionForCopyConstructor = true;
   if (!Subobj->hasSimpleMoveConstructor())
     data().NeedOverloadResolutionForMoveConstructor = true;
@@ -833,7 +835,7 @@ void CXXRecordDecl::addedMember(Decl *D) {
 
           if (Quals & Qualifiers::Const)
             data().HasDeclaredNonConstCopyConstructorWithConstParam = true;
-        } else if (Constructor->isNonConstCopyConstructor(Quals)) {
+        } else if (Constructor->isConstCopyConstructor(Quals)) {
           SMKind |= SMF_ConstCopyConstructor;
 
           if (Quals & Qualifiers::Const)
@@ -2737,7 +2739,8 @@ CXXConstructorDecl::CXXConstructorDecl(
     ASTContext &C, CXXRecordDecl *RD, SourceLocation StartLoc,
     const DeclarationNameInfo &NameInfo, QualType T, TypeSourceInfo *TInfo,
     ExplicitSpecifier ES, bool UsesFPIntrin, bool isInline,
-    bool isImplicitlyDeclared, ConstexprSpecKind ConstexprKind,
+    bool isImplicitlyDeclared, bool isConst,
+    ConstexprSpecKind ConstexprKind,
     InheritedConstructor Inherited, Expr *TrailingRequiresClause)
     : CXXMethodDecl(CXXConstructor, C, RD, StartLoc, NameInfo, T, TInfo,
                     SC_None, UsesFPIntrin, isInline, ConstexprKind,
@@ -2745,6 +2748,7 @@ CXXConstructorDecl::CXXConstructorDecl(
   setNumCtorInitializers(0);
   setInheritingConstructor(static_cast<bool>(Inherited));
   setImplicit(isImplicitlyDeclared);
+  setConstConstructor(isConst);
   CXXConstructorDeclBits.HasTrailingExplicitSpecifier = ES.getExpr() ? 1 : 0;
   if (Inherited)
     *getTrailingObjects<InheritedConstructor>() = Inherited;
@@ -2764,8 +2768,8 @@ CXXConstructorDecl *CXXConstructorDecl::CreateDeserialized(ASTContext &C,
           isInheritingConstructor, hasTrailingExplicit);
   auto *Result = new (C, ID, Extra) CXXConstructorDecl(
       C, nullptr, SourceLocation(), DeclarationNameInfo(), QualType(), nullptr,
-      ExplicitSpecifier(), false, false, false, ConstexprSpecKind::Unspecified,
-      InheritedConstructor(), nullptr);
+      ExplicitSpecifier(), false, false, false, false,
+      ConstexprSpecKind::Unspecified, InheritedConstructor(), nullptr);
   Result->setInheritingConstructor(isInheritingConstructor);
   Result->CXXConstructorDeclBits.HasTrailingExplicitSpecifier =
       hasTrailingExplicit;
@@ -2777,7 +2781,7 @@ CXXConstructorDecl *CXXConstructorDecl::Create(
     ASTContext &C, CXXRecordDecl *RD, SourceLocation StartLoc,
     const DeclarationNameInfo &NameInfo, QualType T, TypeSourceInfo *TInfo,
     ExplicitSpecifier ES, bool UsesFPIntrin, bool isInline,
-    bool isImplicitlyDeclared, ConstexprSpecKind ConstexprKind,
+    bool isImplicitlyDeclared, bool isConst, ConstexprSpecKind ConstexprKind,
     InheritedConstructor Inherited, Expr *TrailingRequiresClause) {
   assert(NameInfo.getName().getNameKind()
          == DeclarationName::CXXConstructorName &&
@@ -2787,7 +2791,8 @@ CXXConstructorDecl *CXXConstructorDecl::Create(
           Inherited ? 1 : 0, ES.getExpr() ? 1 : 0);
   return new (C, RD, Extra) CXXConstructorDecl(
       C, RD, StartLoc, NameInfo, T, TInfo, ES, UsesFPIntrin, isInline,
-      isImplicitlyDeclared, ConstexprKind, Inherited, TrailingRequiresClause);
+      isImplicitlyDeclared, isConst, ConstexprKind, Inherited,
+      TrailingRequiresClause);
 }
 
 CXXConstructorDecl::init_const_iterator CXXConstructorDecl::init_begin() const {
@@ -2821,14 +2826,14 @@ bool
 CXXConstructorDecl::isNonConstCopyConstructor(unsigned &TypeQuals) const {
   return isCopyOrMoveConstructor(TypeQuals) &&
          getParamDecl(0)->getType()->isLValueReferenceType() &&
-         !getMethodQualifiers().hasConst();
+         !isConstConstructor();
 }
 
 bool
 CXXConstructorDecl::isConstCopyConstructor(unsigned &TypeQuals) const {
   return isCopyOrMoveConstructor(TypeQuals) &&
          getParamDecl(0)->getType()->isLValueReferenceType() &&
-         getMethodQualifiers().hasConst();
+         isConstConstructor();
 }
 
 bool CXXConstructorDecl::isMoveConstructor(unsigned &TypeQuals) const {

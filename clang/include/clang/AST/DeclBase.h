@@ -1817,7 +1817,7 @@ class DeclContext {
     /// exactly 64 bits and thus the width of NumCtorInitializers
     /// will need to be shrunk if some bit is added to NumDeclContextBitfields,
     /// NumFunctionDeclBitfields or CXXConstructorDeclBitfields.
-    uint64_t NumCtorInitializers : 17;
+    uint64_t NumCtorInitializers : 16;
     LLVM_PREFERRED_TYPE(bool)
     uint64_t IsInheritingConstructor : 1;
 
@@ -1828,6 +1828,8 @@ class DeclContext {
     /// Whether this constructor is explicit specified.
     LLVM_PREFERRED_TYPE(bool)
     uint64_t IsSimpleExplicit : 1;
+    LLVM_PREFERRED_TYPE(bool)
+    uint64_t IsConstConstructor : 1;
   };
 
   /// Number of inherited and non-inherited bits in CXXConstructorDeclBitfields.
