@@ -3347,6 +3347,8 @@ void Sema::LookupOverloadedOperatorName(OverloadedOperatorKind Op, Scope *S,
   Functions.append(Operators.begin(), Operators.end());
 }
 
+// TODO: should we represent the constness of the object being constructed
+// using ConstThis == true or SM == CXXConstCopyConstructor?
 Sema::SpecialMemberOverloadResult Sema::LookupSpecialMember(CXXRecordDecl *RD,
                                                            CXXSpecialMember SM,
                                                            bool ConstArg,
@@ -3357,9 +3359,9 @@ Sema::SpecialMemberOverloadResult Sema::LookupSpecialMember(CXXRecordDecl *RD,
   assert(CanDeclareSpecialMemberFunction(RD) &&
          "doing special member lookup into record that isn't fully complete");
   RD = RD->getDefinition();
-  if (RValueThis || ConstThis || VolatileThis)
+  if (RValueThis || VolatileThis)
     assert((SM == CXXCopyAssignment || SM == CXXMoveAssignment) &&
-           "constructors and destructors always have unqualified lvalue this");
+           "constructors and destructors always have non-volatile lvalue this");
   if (ConstArg || VolatileArg)
     assert((SM != CXXDefaultConstructor && SM != CXXDestructor) &&
            "parameter-less special members can't have qualified arguments");
@@ -3582,19 +3584,15 @@ CXXConstructorDecl *Sema::LookupDefaultConstructor(CXXRecordDecl *Class) {
 
 /// Look up the copying constructor for the given class.
 CXXConstructorDecl *Sema::LookupCopyingConstructor(CXXRecordDecl *Class,
-                                                   unsigned Quals) {
-  // FIXME: Appears to only be called for MS CXX ABI, skipping for now
-  std::terminate();
-  return nullptr;
-  /*
+                                                   unsigned Quals, bool ConstThis) {
   assert(!(Quals & ~(Qualifiers::Const | Qualifiers::Volatile)) &&
          "non-const, non-volatile qualifiers for copy ctor arg");
+  // TODO: see TODO on LookupSpecialMember
   SpecialMemberOverloadResult Result =
-    LookupSpecialMember(Class, CXXCopyConstructor, Quals & Qualifiers::Const,
-                        Quals & Qualifiers::Volatile, false, false, false);
+    LookupSpecialMember(Class, CXXNonConstCopyConstructor, Quals & Qualifiers::Const,
+                        Quals & Qualifiers::Volatile, false, ConstThis, false);
 
   return cast_or_null<CXXConstructorDecl>(Result.getMethod());
-  */
 }
 
 /// Look up the moving constructor for the given class.

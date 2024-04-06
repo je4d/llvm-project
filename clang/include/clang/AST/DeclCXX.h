@@ -716,7 +716,7 @@ public:
   /// deleted.
   bool defaultedConstCopyConstructorIsDeleted() const {
     assert((!needsOverloadResolutionForCopyConstructor() ||
-            (data().DeclaredSpecialMembers & SMF_ConstCopyConstructor)) &&
+            !needsImplicitConstCopyConstructor()) &&
            "this property has not yet been computed by Sema");
     return data().DefaultedConstCopyConstructorIsDeleted;
   }
@@ -2637,7 +2637,8 @@ class CXXConstructorDecl final
                      const DeclarationNameInfo &NameInfo, QualType T,
                      TypeSourceInfo *TInfo, ExplicitSpecifier ES,
                      bool UsesFPIntrin, bool isInline,
-                     bool isImplicitlyDeclared, ConstexprSpecKind ConstexprKind,
+                     bool isImplicitlyDeclared, bool isConst,
+                     ConstexprSpecKind ConstexprKind,
                      InheritedConstructor Inherited,
                      Expr *TrailingRequiresClause);
 
@@ -2680,7 +2681,7 @@ public:
   Create(ASTContext &C, CXXRecordDecl *RD, SourceLocation StartLoc,
          const DeclarationNameInfo &NameInfo, QualType T, TypeSourceInfo *TInfo,
          ExplicitSpecifier ES, bool UsesFPIntrin, bool isInline,
-         bool isImplicitlyDeclared, ConstexprSpecKind ConstexprKind,
+         bool isImplicitlyDeclared, bool isConst, ConstexprSpecKind ConstexprKind,
          InheritedConstructor Inherited = InheritedConstructor(),
          Expr *TrailingRequiresClause = nullptr);
 
@@ -2873,6 +2874,14 @@ public:
   /// model a call to a constructor inherited from a base class.
   void setInheritingConstructor(bool isIC = true) {
     CXXConstructorDeclBits.IsInheritingConstructor = isIC;
+  }
+
+  bool isConstConstructor() const {
+    return CXXConstructorDeclBits.IsConstConstructor;
+  }
+
+  void setConstConstructor(bool isCC = true) {
+    CXXConstructorDeclBits.IsConstConstructor = isCC;
   }
 
   /// Get the constructor that this inheriting constructor is based on.

@@ -2060,9 +2060,9 @@ def note_nontrivial_no_def_ctor : Note<
 def note_user_declared_ctor : Note<
   "implicit default constructor suppressed by user-declared constructor">;
 def note_nontrivial_no_copy : Note<
-  "because no %select{<<ERROR>>|constructor|constructor|assignment operator|"
+  "because no %select{<<ERROR>>|constructor|constructor|constructor|assignment operator|"
   "assignment operator|<<ERROR>>}2 can be used to "
-  "%select{<<ERROR>>|copy|move|copy|move|<<ERROR>>}2 "
+  "%select{<<ERROR>>|copy|copy|move|copy|move|<<ERROR>>}2 "
   "%select{base class|field|an object}0 of type %3">;
 def note_nontrivial_user_provided : Note<
   "because %select{base class of |field of |}0type %1 has a user-provided "

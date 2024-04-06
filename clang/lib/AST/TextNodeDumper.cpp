@@ -1961,6 +1961,10 @@ void TextNodeDumper::VisitFunctionDecl(const FunctionDecl *D) {
   if (D->isIneligibleOrNotSelected())
     OS << (isa<CXXDestructorDecl>(D) ? " not_selected" : " ineligible");
 
+  if (const auto *CD = dyn_cast<CXXConstructorDecl>(D))
+    if (CD->isConstConstructor())
+      OS << " const-constructor";
+
   if (const auto *FPT = D->getType()->getAs<FunctionProtoType>()) {
     FunctionProtoType::ExtProtoInfo EPI = FPT->getExtProtoInfo();
     switch (EPI.ExceptionSpec.Type) {
