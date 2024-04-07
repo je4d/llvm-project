@@ -45,7 +45,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | `-CXXRecordDecl {{.*}} <line:16:3, line:21:3> line:16:10{{( imported)?}}{{( <undeserialized declarations>)?}} struct V definition
 // CHECK-NEXT:    |   |-DefinitionData empty aggregate standard_layout trivially_copyable pod trivial literal has_constexpr_non_copy_move_ctor can_const_default_init
 // CHECK-NEXT:    |   | |-DefaultConstructor exists trivial constexpr needs_implicit defaulted_is_constexpr
-// CHECK-NEXT:    |   | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    |   | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    |   | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    |   | |-CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    |   | |-MoveAssignment exists simple trivial needs_implicit
@@ -57,7 +57,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    |       | |-CXXRecordDecl {{.*}} <col:7> col:7{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    |       | | |-DefinitionData lambda standard_layout trivially_copyable can_const_default_init
 // CHECK-NEXT:    |       | | | |-DefaultConstructor
-// CHECK-NEXT:    |       | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    |       | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    |       | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    |       | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    |       | | | |-MoveAssignment
@@ -72,7 +72,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    |         |-CXXRecordDecl {{.*}} <col:7> col:7{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    |         | |-DefinitionData lambda standard_layout trivially_copyable can_const_default_init
 // CHECK-NEXT:    |         | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT:    |         | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    |         | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    |         | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    |         | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    |         | | |-MoveAssignment
@@ -91,7 +91,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    | | |-DefinitionData lambda empty standard_layout trivially_copyable literal can_const_default_init
 // CHECK-NEXT:    | | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT:    | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveAssignment
@@ -105,7 +105,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    | | |-DefinitionData lambda empty standard_layout trivially_copyable literal can_const_default_init
 // CHECK-NEXT:    | | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT:    | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveAssignment
@@ -121,7 +121,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    | | |-DefinitionData lambda standard_layout trivially_copyable can_const_default_init
 // CHECK-NEXT:    | | | |-DefaultConstructor
-// CHECK-NEXT:    | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveAssignment
@@ -136,7 +136,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    | | |-DefinitionData lambda empty standard_layout trivially_copyable literal can_const_default_init
 // CHECK-NEXT:    | | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT:    | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveAssignment
@@ -148,7 +148,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    | | |-DefinitionData lambda empty standard_layout trivially_copyable literal can_const_default_init
 // CHECK-NEXT:    | | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT:    | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveAssignment
@@ -164,7 +164,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    | | |-DefinitionData lambda empty standard_layout trivially_copyable literal can_const_default_init
 // CHECK-NEXT:    | | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT:    | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveAssignment
@@ -176,7 +176,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    | | |-DefinitionData lambda empty standard_layout trivially_copyable literal can_const_default_init
 // CHECK-NEXT:    | | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT:    | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveAssignment
@@ -192,7 +192,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    | | |-DefinitionData lambda trivially_copyable literal can_const_default_init
 // CHECK-NEXT:    | | | |-DefaultConstructor
-// CHECK-NEXT:    | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveAssignment
@@ -221,7 +221,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    | | |-DefinitionData lambda standard_layout trivially_copyable can_const_default_init
 // CHECK-NEXT:    | | | |-DefaultConstructor
-// CHECK-NEXT:    | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveAssignment
@@ -238,7 +238,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    | | |-DefinitionData lambda empty standard_layout trivially_copyable literal can_const_default_init
 // CHECK-NEXT:    | | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT:    | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveAssignment
@@ -252,7 +252,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    | | |-DefinitionData lambda empty standard_layout trivially_copyable literal can_const_default_init
 // CHECK-NEXT:    | | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT:    | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveAssignment
@@ -266,7 +266,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    | | |-DefinitionData lambda empty standard_layout trivially_copyable literal can_const_default_init
 // CHECK-NEXT:    | | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT:    | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveAssignment
@@ -280,7 +280,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:    | |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:    | | |-DefinitionData lambda empty standard_layout trivially_copyable literal can_const_default_init
 // CHECK-NEXT:    | | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT:    | | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:    | | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:    | | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:    | | | |-MoveAssignment
@@ -298,7 +298,7 @@ template <typename... Ts> void test(Ts... a) {
 // CHECK-NEXT:      |-CXXRecordDecl {{.*}} <col:3> col:3{{( imported)?}} implicit{{( <undeserialized declarations>)?}} class definition
 // CHECK-NEXT:      | |-DefinitionData lambda empty standard_layout trivially_copyable literal can_const_default_init
 // CHECK-NEXT:      | | |-DefaultConstructor defaulted_is_constexpr
-// CHECK-NEXT:      | | |-NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+// CHECK-NEXT:      | | |-CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:      | | |-MoveConstructor exists simple trivial needs_implicit
 // CHECK-NEXT:      | | |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
 // CHECK-NEXT:      | | |-MoveAssignment

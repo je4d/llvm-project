@@ -109,7 +109,7 @@ namespace testCXXRecordDecl {
 // CHECK:      CXXRecordDecl{{.*}} class TestEmpty
 // CHECK-NEXT:   DefinitionData pass_in_registers empty aggregate standard_layout trivially_copyable pod trivial literal has_constexpr_non_copy_move_ctor can_const_default_init
 // CHECK-NEXT:     DefaultConstructor exists trivial constexpr
-// CHECK-NEXT:     NonConstCopyConstructor simple trivial has_const_param
+// CHECK-NEXT:     CopyConstructor simple trivial has_const_param
 // CHECK-NEXT:     MoveConstructor exists simple trivial
 // CHECK-NEXT:     CopyAssignment simple trivial has_const_param
 // CHECK-NEXT:     MoveAssignment exists simple trivial
@@ -124,7 +124,7 @@ namespace testCXXRecordDecl {
 // CHECK:      CXXRecordDecl{{.*}} class TestCXXRecordDecl
 // CHECK-NEXT:   DefinitionData{{$}}
 // CHECK-NEXT:     DefaultConstructor exists non_trivial
-// CHECK-NEXT:     NonConstCopyConstructor simple non_trivial has_const_param
+// CHECK-NEXT:     CopyConstructor simple non_trivial has_const_param
 // CHECK-NEXT:     MoveConstructor exists simple non_trivial
 // CHECK-NEXT:     CopyAssignment simple non_trivial has_const_param
 // CHECK-NEXT:     MoveAssignment exists simple non_trivial

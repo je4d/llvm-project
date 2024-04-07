@@ -257,7 +257,7 @@ void PrimaryExpressions(Ts... a) {
       // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:7> col:7 implicit class definition
       // CHECK-NEXT: DefinitionData lambda
       // CHECK-NEXT: DefaultConstructor
-      // CHECK-NEXT: NonConstCopyConstructor
+      // CHECK-NEXT: CopyConstructor
       // CHECK-NEXT: MoveConstructor
       // CHECK-NEXT: CopyAssignment
       // CHECK-NEXT: MoveAssignment
@@ -273,7 +273,7 @@ void PrimaryExpressions(Ts... a) {
       // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:7> col:7 implicit class definition
       // CHECK-NEXT: DefinitionData lambda
       // CHECK-NEXT: DefaultConstructor
-      // CHECK-NEXT: NonConstCopyConstructor
+      // CHECK-NEXT: CopyConstructor
       // CHECK-NEXT: MoveConstructor
       // CHECK-NEXT: CopyAssignment
       // CHECK-NEXT: MoveAssignment
@@ -294,7 +294,7 @@ void PrimaryExpressions(Ts... a) {
   // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:3> col:3 implicit class definition
   // CHECK-NEXT: DefinitionData lambda
   // CHECK-NEXT: DefaultConstructor
-  // CHECK-NEXT: NonConstCopyConstructor
+  // CHECK-NEXT: CopyConstructor
   // CHECK-NEXT: MoveConstructor
   // CHECK-NEXT: CopyAssignment
   // CHECK-NEXT: MoveAssignment
@@ -310,7 +310,7 @@ void PrimaryExpressions(Ts... a) {
   // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:3> col:3 implicit class definition
   // CHECK-NEXT: DefinitionData lambda
   // CHECK-NEXT: DefaultConstructor
-  // CHECK-NEXT: NonConstCopyConstructor
+  // CHECK-NEXT: CopyConstructor
   // CHECK-NEXT: MoveConstructor
   // CHECK-NEXT: CopyAssignment
   // CHECK-NEXT: MoveAssignment
@@ -328,7 +328,7 @@ void PrimaryExpressions(Ts... a) {
   // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:3> col:3 implicit class definition
   // CHECK-NEXT: DefinitionData lambda
   // CHECK-NEXT: DefaultConstructor
-  // CHECK-NEXT: NonConstCopyConstructor
+  // CHECK-NEXT: CopyConstructor
   // CHECK-NEXT: MoveConstructor
   // CHECK-NEXT: CopyAssignment
   // CHECK-NEXT: MoveAssignment
@@ -345,7 +345,7 @@ void PrimaryExpressions(Ts... a) {
   // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:3> col:3 implicit class definition
   // CHECK-NEXT: DefinitionData lambda
   // CHECK-NEXT: DefaultConstructor
-  // CHECK-NEXT: NonConstCopyConstructor
+  // CHECK-NEXT: CopyConstructor
   // CHECK-NEXT: MoveConstructor
   // CHECK-NEXT: CopyAssignment
   // CHECK-NEXT: MoveAssignment
@@ -359,7 +359,7 @@ void PrimaryExpressions(Ts... a) {
   // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:3> col:3 implicit class definition
   // CHECK-NEXT: DefinitionData lambda
   // CHECK-NEXT: DefaultConstructor
-  // CHECK-NEXT: NonConstCopyConstructor
+  // CHECK-NEXT: CopyConstructor
   // CHECK-NEXT: MoveConstructor
   // CHECK-NEXT: CopyAssignment
   // CHECK-NEXT: MoveAssignment
@@ -377,7 +377,7 @@ void PrimaryExpressions(Ts... a) {
   // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:3> col:3 implicit class definition
   // CHECK-NEXT: DefinitionData lambda
   // CHECK-NEXT: DefaultConstructor
-  // CHECK-NEXT: NonConstCopyConstructor
+  // CHECK-NEXT: CopyConstructor
   // CHECK-NEXT: MoveConstructor
   // CHECK-NEXT: CopyAssignment
   // CHECK-NEXT: MoveAssignment
@@ -391,7 +391,7 @@ void PrimaryExpressions(Ts... a) {
   // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:3> col:3 implicit class definition
   // CHECK-NEXT: DefinitionData lambda
   // CHECK-NEXT: DefaultConstructor
-  // CHECK-NEXT: NonConstCopyConstructor
+  // CHECK-NEXT: CopyConstructor
   // CHECK-NEXT: MoveConstructor
   // CHECK-NEXT: CopyAssignment
   // CHECK-NEXT: MoveAssignment
@@ -409,7 +409,7 @@ void PrimaryExpressions(Ts... a) {
   // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:3> col:3 implicit class definition
   // CHECK-NEXT: DefinitionData lambda
   // CHECK-NEXT: DefaultConstructor
-  // CHECK-NEXT: NonConstCopyConstructor
+  // CHECK-NEXT: CopyConstructor
   // CHECK-NEXT: MoveConstructor
   // CHECK-NEXT: CopyAssignment
   // CHECK-NEXT: MoveAssignment
@@ -440,7 +440,7 @@ void PrimaryExpressions(Ts... a) {
   // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:3> col:3 implicit class definition
   // CHECK-NEXT: DefinitionData lambda
   // CHECK-NEXT: DefaultConstructor
-  // CHECK-NEXT: NonConstCopyConstructor
+  // CHECK-NEXT: CopyConstructor
   // CHECK-NEXT: MoveConstructor
   // CHECK-NEXT: CopyAssignment
   // CHECK-NEXT: MoveAssignment
@@ -459,7 +459,7 @@ void PrimaryExpressions(Ts... a) {
   // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:3> col:3 implicit class definition
   // CHECK-NEXT: DefinitionData lambda
   // CHECK-NEXT: DefaultConstructor
-  // CHECK-NEXT: NonConstCopyConstructor
+  // CHECK-NEXT: CopyConstructor
   // CHECK-NEXT: MoveConstructor
   // CHECK-NEXT: CopyAssignment
   // CHECK-NEXT: MoveAssignment
@@ -475,7 +475,7 @@ void PrimaryExpressions(Ts... a) {
   // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:3> col:3 implicit class definition
   // CHECK-NEXT: DefinitionData lambda
   // CHECK-NEXT: DefaultConstructor
-  // CHECK-NEXT: NonConstCopyConstructor
+  // CHECK-NEXT: CopyConstructor
   // CHECK-NEXT: MoveConstructor
   // CHECK-NEXT: CopyAssignment
   // CHECK-NEXT: MoveAssignment
@@ -491,7 +491,7 @@ void PrimaryExpressions(Ts... a) {
   // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:3> col:3 implicit class definition
   // CHECK-NEXT: DefinitionData lambda
   // CHECK-NEXT: DefaultConstructor
-  // CHECK-NEXT: NonConstCopyConstructor
+  // CHECK-NEXT: CopyConstructor
   // CHECK-NEXT: MoveConstructor
   // CHECK-NEXT: CopyAssignment
   // CHECK-NEXT: MoveAssignment
@@ -507,7 +507,7 @@ void PrimaryExpressions(Ts... a) {
   // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <col:3> col:3 implicit class definition
   // CHECK-NEXT: DefinitionData lambda
   // CHECK-NEXT: DefaultConstructor
-  // CHECK-NEXT: NonConstCopyConstructor
+  // CHECK-NEXT: CopyConstructor
   // CHECK-NEXT: MoveConstructor
   // CHECK-NEXT: CopyAssignment
   // CHECK-NEXT: MoveAssignment
