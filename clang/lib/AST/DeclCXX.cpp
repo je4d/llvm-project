@@ -616,7 +616,9 @@ bool CXXRecordDecl::isTriviallyCopyConstructible() const {
 
   //   A trivially copy constructible class is a class that:
   //   -- has no non-trivial copy constructors,
-  if (hasNonTrivialCopyConstructor())
+  if (hasNonTrivialNonConstCopyConstructor())
+    return false;
+  if (hasNonTrivialConstCopyConstructor())
     return false;
   //   -- has a trivial destructor.
   if (!hasTrivialDestructor())

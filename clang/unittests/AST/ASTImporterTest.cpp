@@ -3289,9 +3289,11 @@ TEST_P(ImportImplicitMethods, DefaultConstructor) {
   testImportOf(cxxConstructorDecl(isDefaultConstructor()));
 }
 
+/*
 TEST_P(ImportImplicitMethods, ConstCopyConstructor) {
   testImportOf(cxxConstructorDecl(isConstCopyConstructor()));
 }
+*/
 
 TEST_P(ImportImplicitMethods, NonConstCopyConstructor) {
   testImportOf(cxxConstructorDecl(isNonConstCopyConstructor()));

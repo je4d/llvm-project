@@ -5899,12 +5899,12 @@ def err_alias_is_definition :
   Error<"definition %0 cannot also be an %select{alias|ifunc}1">;
 def err_definition_of_implicitly_declared_member : Error<
   "definition of implicitly declared %select{default constructor|copy "
-  "constructor|move constructor|copy assignment operator|move assignment "
-  "operator|destructor|function}1">;
+  "constructor|const copy constructor|move constructor|copy assignment "
+  "operator|move assignment operator|destructor|function}1">;
 def err_definition_of_explicitly_defaulted_member : Error<
   "definition of explicitly defaulted %select{default constructor|copy "
-  "constructor|move constructor|copy assignment operator|move assignment "
-  "operator|destructor|function}0">;
+  "constructor|const copy constructor|move constructor|copy assignment "
+  "operator|move assignment operator|destructor|function}0">;
 def err_redefinition_extern_inline : Error<
   "redefinition of a 'extern inline' function %0 is not supported in "
   "%select{C99 mode|C++}1">;

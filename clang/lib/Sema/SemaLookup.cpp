@@ -3430,7 +3430,7 @@ Sema::SpecialMemberOverloadResult Sema::LookupSpecialMember(CXXRecordDecl *RD,
           DeclareImplicitCopyConstructor(RD, 0);
         });
       }
-      if (getLangOpts().CPlusPlus2b && RD->needsImplicitConstCopyConstructor()) {
+      if (getLangOpts().CPlusPlus26 && RD->needsImplicitConstCopyConstructor()) {
         runWithSufficientStackSpace(RD->getLocation(), [&] {
           DeclareImplicitCopyConstructor(RD, Qualifiers::Const);
         });
@@ -3521,6 +3521,8 @@ Sema::SpecialMemberOverloadResult Sema::LookupSpecialMember(CXXRecordDecl *RD,
       if (SM == CXXCopyAssignment || SM == CXXMoveAssignment)
         AddMethodCandidate(M, Cand, RD, ThisTy, Classification,
                            llvm::ArrayRef(&Arg, NumArgs), OCS, true);
+      else if (CtorInfo && CtorInfo.Constructor->isConstConstructor() && !ConstThis)
+        continue;
       else if (CtorInfo)
         AddOverloadCandidate(CtorInfo.Constructor, CtorInfo.FoundDecl,
                              llvm::ArrayRef(&Arg, NumArgs), OCS,

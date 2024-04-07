@@ -959,7 +959,7 @@ static bool describeCodeDecl(raw_ostream &Out, const Decl *D,
       else if (CD->isConstCopyConstructor())
         Out << "const copy ";
       else if (CD->isNonConstCopyConstructor())
-        Out << "non-const copy ";
+        Out << "copy ";
       else if (CD->isMoveConstructor())
         Out << "move ";
 

@@ -550,7 +550,8 @@ JSONNodeDumper::createCXXRecordDefinitionData(const CXXRecordDecl *RD) {
 
   Ret["defaultCtor"] = createDefaultConstructorDefinitionData(RD);
   Ret["copyCtor"] = createNonConstCopyConstructorDefinitionData(RD);
-  Ret["constCopyCtor"] = createConstCopyConstructorDefinitionData(RD);
+  if (Ctx.getLangOpts().CPlusPlus26)
+    Ret["constCopyCtor"] = createConstCopyConstructorDefinitionData(RD);
   Ret["moveCtor"] = createMoveConstructorDefinitionData(RD);
   Ret["copyAssign"] = createCopyAssignmentDefinitionData(RD);
   Ret["moveAssign"] = createMoveAssignmentDefinitionData(RD);
