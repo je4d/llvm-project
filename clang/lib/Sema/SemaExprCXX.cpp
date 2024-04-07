@@ -5321,8 +5321,9 @@ static bool EvaluateUnaryTypeTrait(Sema &Self, TypeTrait UTT,
     if (T.isPODType(C) || T->isReferenceType())
       return true;
     if (CXXRecordDecl *RD = T->getAsCXXRecordDecl())
-      return RD->hasTrivialCopyConstructor() &&
-             !RD->hasNonTrivialCopyConstructor();
+      return RD->hasTrivialNonConstCopyConstructor() &&
+             !RD->hasNonTrivialNonConstCopyConstructor() &&
+             !RD->hasNonTrivialConstCopyConstructor();
     return false;
   case UTT_HasTrivialMoveAssign:
     //  This trait is implemented by MSVC 2012 and needed to parse the
@@ -5464,8 +5465,9 @@ static bool EvaluateUnaryTypeTrait(Sema &Self, TypeTrait UTT,
     if (T.isPODType(C) || T->isReferenceType() || T->isObjCLifetimeType())
       return true;
     if (CXXRecordDecl *RD = T->getAsCXXRecordDecl()) {
-      if (RD->hasTrivialCopyConstructor() &&
-          !RD->hasNonTrivialCopyConstructor())
+      if (RD->hasTrivialNonConstCopyConstructor() &&
+          !RD->hasNonTrivialNonConstCopyConstructor() &&
+          !RD->hasNonTrivialConstCopyConstructor())
         return true;
 
       bool FoundConstructor = false;
@@ -5480,8 +5482,9 @@ static bool EvaluateUnaryTypeTrait(Sema &Self, TypeTrait UTT,
         if (isa<UsingDecl>(ND))
           continue;
         auto *Constructor = cast<CXXConstructorDecl>(ND->getUnderlyingDecl());
-        if (Constructor->isCopyConstructor(FoundTQs)) {
-          FoundConstructor = true;
+        if (Constructor->isNonConstCopyConstructor(FoundTQs) or Constructor->isConstCopyConstructor(FoundTQs)) {
+          if (Constructor->isNonConstCopyConstructor(FoundTQs))
+            FoundConstructor = true;
           auto *CPT = Constructor->getType()->castAs<FunctionProtoType>();
           CPT = Self.ResolveExceptionSpec(KeyLoc, CPT);
           if (!CPT)
