@@ -971,7 +971,8 @@ Sema::VarArgKind Sema::isValidVarArgType(const QualType &Ty) {
   //   is conditionally-supported with implementation-defined semantics.
   if (getLangOpts().CPlusPlus11 && !Ty->isDependentType())
     if (CXXRecordDecl *Record = Ty->getAsCXXRecordDecl())
-      if (!Record->hasNonTrivialCopyConstructor() &&
+      if (!Record->hasNonTrivialNonConstCopyConstructor() &&
+          !Record->hasNonTrivialConstCopyConstructor() &&
           !Record->hasNonTrivialMoveConstructor() &&
           !Record->hasNonTrivialDestructor())
         return VAK_ValidInCXX11;
@@ -19009,7 +19010,8 @@ void Sema::MarkFunctionReferenced(SourceLocation Loc, FunctionDecl *Func,
                 !Constructor->hasAttr<DLLExportAttr>())
               return;
             DefineImplicitDefaultConstructor(Loc, Constructor);
-          } else if (Constructor->isCopyConstructor()) {
+          } else if (Constructor->isNonConstCopyConstructor() ||
+                     Constructor->isConstCopyConstructor()) {
             DefineImplicitCopyConstructor(Loc, Constructor);
           } else if (Constructor->isMoveConstructor()) {
             DefineImplicitMoveConstructor(Loc, Constructor);
@@ -19648,7 +19650,7 @@ static bool captureInLambda(LambdaScopeInfo *LSI, ValueDecl *Var,
 }
 
 static bool canCaptureVariableByCopy(ValueDecl *Var,
-                                     const ASTContext &Context) {
+                                     const ASTContext &Context, bool IsMutable) {
   // Offer a Copy fix even if the type is dependent.
   if (Var->getType()->isDependentType())
     return true;
@@ -19659,11 +19661,16 @@ static bool canCaptureVariableByCopy(ValueDecl *Var,
 
     if (!(RD = RD->getDefinition()))
       return false;
-    if (RD->hasSimpleCopyConstructor())
+    if (RD->hasSimpleNonConstCopyConstructor() or (not IsMutable and RD->hasSimpleConstCopyConstructor()))
       return true;
-    if (RD->hasUserDeclaredCopyConstructor())
+    if (not IsMutable)
+      if (RD->hasUserDeclaredConstCopyConstructor())
+        for (CXXConstructorDecl *Ctor : RD->ctors())
+          if (Ctor->isConstCopyConstructor())
+            return !Ctor->isDeleted();
+    if (RD->hasUserDeclaredNonConstCopyConstructor())
       for (CXXConstructorDecl *Ctor : RD->ctors())
-        if (Ctor->isCopyConstructor())
+        if (Ctor->isNonConstCopyConstructor())
           return !Ctor->isDeleted();
   }
   return false;
@@ -19678,7 +19685,7 @@ static void buildLambdaCaptureFixit(Sema &Sema, LambdaScopeInfo *LSI,
   assert(LSI->ImpCaptureStyle == CapturingScopeInfo::ImpCap_None);
   // Don't offer Capture by copy of default capture by copy fixes if Var is
   // known not to be copy constructible.
-  bool ShouldOfferCopyFix = canCaptureVariableByCopy(Var, Sema.getASTContext());
+  bool ShouldOfferCopyFix = canCaptureVariableByCopy(Var, Sema.getASTContext(), LSI->Mutable);
 
   SmallString<32> FixBuffer;
   StringRef Separator = LSI->NumExplicitCaptures > 0 ? ", " : "";

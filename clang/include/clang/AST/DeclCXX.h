@@ -830,6 +830,7 @@ public:
 
   /// Determine whether this class needs an implicit copy
   /// constructor to be lazily declared.
+  // TODO: should this be split into const/nonconst?
   bool needsImplicitCopyConstructor() const {
     return !(data().DeclaredSpecialMembers & (SMF_NonConstCopyConstructor|SMF_ConstCopyConstructor));
   }
