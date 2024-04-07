@@ -18,7 +18,7 @@ struct A {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} prev 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+32]]:1> line:[[@LINE-1]]:8 struct A definition
   // CHECK-NEXT: DefinitionData pass_in_registers aggregate standard_layout trivially_copyable pod trivial literal
   // CHECK-NEXT: DefaultConstructor exists trivial needs_implicit
-  // CHECK-NEXT: NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+  // CHECK-NEXT: CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
   // CHECK-NEXT: MoveConstructor exists simple trivial needs_implicit
   // CHECK-NEXT: CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
   // CHECK-NEXT: MoveAssignment exists simple trivial needs_implicit
@@ -53,7 +53,7 @@ struct C {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+66]]:1> line:[[@LINE-1]]:8 struct C definition
   // CHECK-NEXT: DefinitionData pass_in_registers aggregate standard_layout trivially_copyable pod trivial literal has_variant_members
   // CHECK-NEXT: DefaultConstructor exists trivial needs_implicit
-  // CHECK-NEXT: NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+  // CHECK-NEXT: CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
   // CHECK-NEXT: MoveConstructor exists simple trivial needs_implicit
   // CHECK-NEXT: CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
   // CHECK-NEXT: MoveAssignment exists simple trivial needs_implicit
@@ -64,7 +64,7 @@ struct C {
     // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:3, line:[[@LINE+10]]:3> line:[[@LINE-1]]:3 struct definition
     // CHECK-NEXT: DefinitionData pass_in_registers aggregate standard_layout trivially_copyable pod trivial literal
     // CHECK-NEXT: DefaultConstructor exists trivial needs_implicit
-    // CHECK-NEXT: NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+    // CHECK-NEXT: CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
     // CHECK-NEXT: MoveConstructor exists simple trivial needs_implicit
     // CHECK-NEXT: CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
     // CHECK-NEXT: MoveAssignment exists simple trivial needs_implicit
@@ -78,7 +78,7 @@ struct C {
     // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:3, line:[[@LINE+12]]:3> line:[[@LINE-1]]:3 union definition
     // CHECK-NEXT: DefinitionData is_anonymous pass_in_registers aggregate standard_layout trivially_copyable pod trivial literal
     // CHECK-NEXT: DefaultConstructor exists trivial needs_implicit
-    // CHECK-NEXT: NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+    // CHECK-NEXT: CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
     // CHECK-NEXT: MoveConstructor exists simple trivial needs_implicit
     // CHECK-NEXT: CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
     // CHECK-NEXT: MoveAssignment exists simple trivial needs_implicit
@@ -100,7 +100,7 @@ struct C {
     // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:3, line:[[@LINE+11]]:3> line:[[@LINE-1]]:3 struct definition
     // CHECK-NEXT: DefinitionData is_anonymous pass_in_registers aggregate standard_layout trivially_copyable pod trivial literal
     // CHECK-NEXT: DefaultConstructor exists trivial needs_implicit
-    // CHECK-NEXT: NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+    // CHECK-NEXT: CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
     // CHECK-NEXT: MoveConstructor exists simple trivial needs_implicit
     // CHECK-NEXT: CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
     // CHECK-NEXT: MoveAssignment exists simple trivial needs_implicit
@@ -122,7 +122,7 @@ struct D {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+16]]:1> line:[[@LINE-1]]:8 struct D definition
   // CHECK-NEXT: DefinitionData pass_in_registers aggregate standard_layout trivially_copyable pod trivial literal
   // CHECK-NEXT: DefaultConstructor exists trivial needs_implicit
-  // CHECK-NEXT: NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+  // CHECK-NEXT: CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
   // CHECK-NEXT: MoveConstructor exists simple trivial needs_implicit
   // CHECK-NEXT: CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
   // CHECK-NEXT: MoveAssignment exists simple trivial needs_implicit
@@ -147,7 +147,7 @@ union E {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} prev 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+32]]:1> line:[[@LINE-1]]:7 union E definition
   // CHECK-NEXT: DefinitionData pass_in_registers aggregate standard_layout trivially_copyable pod trivial literal
   // CHECK-NEXT: DefaultConstructor exists trivial needs_implicit
-  // CHECK-NEXT: NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+  // CHECK-NEXT: CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
   // CHECK-NEXT: MoveConstructor exists simple trivial needs_implicit
   // CHECK-NEXT: CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
   // CHECK-NEXT: MoveAssignment exists simple trivial needs_implicit
@@ -182,7 +182,7 @@ union G {
   // CHECK: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:1, line:[[@LINE+71]]:1> line:[[@LINE-1]]:7 union G definition
   // CHECK-NEXT: DefinitionData pass_in_registers aggregate standard_layout trivially_copyable pod trivial literal
   // CHECK-NEXT: DefaultConstructor exists trivial needs_implicit
-  // CHECK-NEXT: NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+  // CHECK-NEXT: CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
   // CHECK-NEXT: MoveConstructor exists simple trivial needs_implicit
   // CHECK-NEXT: CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
   // CHECK-NEXT: MoveAssignment exists simple trivial needs_implicit
@@ -193,7 +193,7 @@ union G {
     // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:3, line:[[@LINE+11]]:3> line:[[@LINE-1]]:3 struct definition
     // CHECK-NEXT: DefinitionData pass_in_registers aggregate standard_layout trivially_copyable pod trivial literal
     // CHECK-NEXT: DefaultConstructor exists trivial needs_implicit
-    // CHECK-NEXT: NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+    // CHECK-NEXT: CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
     // CHECK-NEXT: MoveConstructor exists simple trivial needs_implicit
     // CHECK-NEXT: CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
     // CHECK-NEXT: MoveAssignment exists simple trivial needs_implicit
@@ -210,7 +210,7 @@ union G {
     // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:3, line:[[@LINE+13]]:3> line:[[@LINE-1]]:3 union definition
     // CHECK-NEXT: DefinitionData is_anonymous pass_in_registers aggregate standard_layout trivially_copyable pod trivial literal
     // CHECK-NEXT: DefaultConstructor exists trivial needs_implicit
-    // CHECK-NEXT: NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+    // CHECK-NEXT: CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
     // CHECK-NEXT: MoveConstructor exists simple trivial needs_implicit
     // CHECK-NEXT: CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
     // CHECK-NEXT: MoveAssignment exists simple trivial needs_implicit
@@ -233,7 +233,7 @@ union G {
     // CHECK-NEXT: CXXRecordDecl 0x{{[^ ]*}} <line:[[@LINE-1]]:3, line:[[@LINE+12]]:3> line:[[@LINE-1]]:3 struct definition
     // CHECK-NEXT: DefinitionData is_anonymous pass_in_registers aggregate standard_layout trivially_copyable pod trivial literal
     // CHECK-NEXT: DefaultConstructor exists trivial needs_implicit
-    // CHECK-NEXT: NonConstCopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
+    // CHECK-NEXT: CopyConstructor simple trivial has_const_param needs_implicit implicit_has_const_param
     // CHECK-NEXT: MoveConstructor exists simple trivial needs_implicit
     // CHECK-NEXT: CopyAssignment simple trivial has_const_param needs_implicit implicit_has_const_param
     // CHECK-NEXT: MoveAssignment exists simple trivial needs_implicit
