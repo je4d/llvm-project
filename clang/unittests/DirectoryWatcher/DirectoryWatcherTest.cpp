@@ -289,6 +289,7 @@ TEST(DirectoryWatcherTest, InitialScanSync) {
        {EventKind::Modified, "c"}}
       };
 
+//  "clang::DirectoryWatcher::create(llvm::StringRef, std::__1::function<void (llvm::ArrayRef<clang::DirectoryWatcher::Event>, bool)>, bool)", referenced from:
   llvm::Expected<std::unique_ptr<DirectoryWatcher>> DW =
       DirectoryWatcher::create(
           fixture.TestWatchedDir,

@@ -844,7 +844,8 @@ public:
     // this or not.
     return !(data().DeclaredSpecialMembers & SMF_ConstCopyConstructor) &&
            !hasUserDeclaredNonConstCopyConstructor() &&
-           !implicitNonConstCopyConstructorHasConstParam();
+           !implicitNonConstCopyConstructorHasConstParam() &&
+           implicitConstCopyConstructorHasConstParam();
   }
 
   /// Determine whether this class needs an implicit non-const copy

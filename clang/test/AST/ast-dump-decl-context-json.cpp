@@ -168,14 +168,11 @@ void S::Method() {}
 // CHECK-NEXT:    "definitionData": {
 // CHECK-NEXT:     "canConstDefaultInit": true,
 // CHECK-NEXT:     "canPassInRegisters": true,
-// CHECK-NEXT:     "copyAssign": {
-// CHECK-NEXT:      "hasConstParam": true,
+// CHECK-NEXT:     "constCopyCtor": {
 // CHECK-NEXT:      "implicitHasConstParam": true,
-// CHECK-NEXT:      "needsImplicit": true,
-// CHECK-NEXT:      "simple": true,
 // CHECK-NEXT:      "trivial": true
 // CHECK-NEXT:     },
-// CHECK-NEXT:     "copyCtor": {
+// CHECK-NEXT:     "copyAssign": {
 // CHECK-NEXT:      "hasConstParam": true,
 // CHECK-NEXT:      "implicitHasConstParam": true,
 // CHECK-NEXT:      "needsImplicit": true,
@@ -211,6 +208,13 @@ void S::Method() {}
 // CHECK-NEXT:     },
 // CHECK-NEXT:     "moveCtor": {
 // CHECK-NEXT:      "exists": true,
+// CHECK-NEXT:      "needsImplicit": true,
+// CHECK-NEXT:      "simple": true,
+// CHECK-NEXT:      "trivial": true
+// CHECK-NEXT:     },
+// CHECK-NEXT:     "nonConstCopyCtor": {
+// CHECK-NEXT:      "hasConstParam": true,
+// CHECK-NEXT:      "implicitHasConstParam": true,
 // CHECK-NEXT:      "needsImplicit": true,
 // CHECK-NEXT:      "simple": true,
 // CHECK-NEXT:      "trivial": true

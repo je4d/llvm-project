@@ -1848,13 +1848,13 @@ def err_access_base_ctor : Error<
   // The ERRORs represent other special members that aren't constructors, in
   // hopes that someone will bother noticing and reporting if they appear
   "%select{base class|inherited virtual base class}0 %1 has %select{private|"
-  "protected}3 %select{default |copy |move |*ERROR* |*ERROR* "
+  "protected}3 %select{default |copy |const-copy |move |*ERROR* |*ERROR* "
   "|*ERROR*|}2constructor">, AccessControl;
 def err_access_field_ctor : Error<
   // The ERRORs represent other special members that aren't constructors, in
   // hopes that someone will bother noticing and reporting if they appear
   "field of type %0 has %select{private|protected}2 "
-  "%select{default |copy |move |*ERROR* |*ERROR* |*ERROR* |}1constructor">,
+  "%select{default |copy |const-copy |move |*ERROR* |*ERROR* |*ERROR* |}1constructor">,
   AccessControl;
 def err_access_friend_function : Error<
   "friend function %1 is a %select{private|protected}0 member of %3">,
