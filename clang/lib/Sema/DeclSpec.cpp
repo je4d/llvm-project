@@ -442,6 +442,8 @@ void DeclSpec::forEachCVRUQualifier(
     llvm::function_ref<void(TQ, StringRef, SourceLocation)> Handle) {
   if (TypeQualifiers & TQ_const)
     Handle(TQ_const, "const", TQ_constLoc);
+  if (TypeQualifiers & TQ_propconst)
+    Handle(TQ_propconst, "propconst", TQ_propconstLoc);
   if (TypeQualifiers & TQ_volatile)
     Handle(TQ_volatile, "volatile", TQ_volatileLoc);
   if (TypeQualifiers & TQ_restrict)
@@ -630,6 +632,7 @@ const char *DeclSpec::getSpecifierName(TQ T) {
   switch (T) {
   case DeclSpec::TQ_unspecified: return "unspecified";
   case DeclSpec::TQ_const:       return "const";
+  case DeclSpec::TQ_propconst:   return "propconst";
   case DeclSpec::TQ_restrict:    return "restrict";
   case DeclSpec::TQ_volatile:    return "volatile";
   case DeclSpec::TQ_atomic:      return "_Atomic";
@@ -1016,6 +1019,7 @@ bool DeclSpec::SetTypeQual(TQ T, SourceLocation Loc) {
   switch (T) {
   case TQ_unspecified: break;
   case TQ_const:    TQ_constLoc = Loc; return false;
+  case TQ_propconst: TQ_propconstLoc = Loc; return false;
   case TQ_restrict: TQ_restrictLoc = Loc; return false;
   case TQ_volatile: TQ_volatileLoc = Loc; return false;
   case TQ_unaligned: TQ_unalignedLoc = Loc; return false;
@@ -1163,11 +1167,12 @@ void DeclSpec::Finish(Sema &S, const PrintingPolicy &Policy) {
        getTypeSpecSign() != TypeSpecifierSign::Unspecified ||
        TypeAltiVecVector || TypeAltiVecPixel || TypeAltiVecBool ||
        TypeQualifiers)) {
-    const unsigned NumLocs = 9;
+    const unsigned NumLocs = 10;
     SourceLocation ExtraLocs[NumLocs] = {
-        TSWRange.getBegin(), TSCLoc,       TSSLoc,
-        AltiVecLoc,          TQ_constLoc,  TQ_restrictLoc,
-        TQ_volatileLoc,      TQ_atomicLoc, TQ_unalignedLoc};
+        TSWRange.getBegin(), TSCLoc,         TSSLoc,
+        AltiVecLoc,          TQ_constLoc,    TQ_propconstLoc,
+        TQ_volatileLoc,      TQ_restrictLoc, TQ_atomicLoc,
+        TQ_unalignedLoc};
     FixItHint Hints[NumLocs];
     SourceLocation FirstLoc;
     for (unsigned I = 0; I != NumLocs; ++I) {
