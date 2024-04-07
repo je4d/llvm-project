@@ -18,7 +18,7 @@ template struct DefaultConstructorCheck<1>;
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
 // CHECK-NEXT:          "canPassInRegisters": true,
-// CHECK-NEXT:          "copyAssign": {
+// CHECK-NEXT:          "constCopyCtor": {
 
 // CHECK:               "defaultCtor": {
 // CHECK-NEXT:            "defaultedIsConstexpr": true,
@@ -41,7 +41,7 @@ template struct DefaultConstructorCheck<2>;
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
 // CHECK-NEXT:          "canPassInRegisters": true,
-// CHECK-NEXT:          "copyAssign": {
+// CHECK-NEXT:          "constCopyCtor": {
 
 // CHECK:               "defaultCtor": {
 // CHECK-NEXT:            "defaultedIsConstexpr": true,
@@ -65,7 +65,7 @@ template struct DefaultConstructorCheck<3>;
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
 // CHECK-NEXT:          "canPassInRegisters": true,
-// CHECK-NEXT:          "copyAssign": {
+// CHECK-NEXT:          "constCopyCtor": {
 
 // CHECK:               "defaultCtor": {
 // CHECK-NEXT:            "defaultedIsConstexpr": true,
@@ -96,33 +96,26 @@ template struct CopyConstructorCheck<1>;
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
 // CHECK-NEXT:          "canPassInRegisters": true,
-// CHECK-NEXT:          "copyAssign": {
-
-// CHECK:               "copyCtor": {
-// CHECK-NEXT:            "hasConstParam": true,
-// CHECK-NEXT:            "implicitHasConstParam": true,
-// CHECK-NEXT:            "trivial": true,
-// CHECK-NEXT:            "userDeclared": true
-// CHECK-NEXT:          },
+// CHECK-NEXT:          "constCopyCtor": {
 
 // CHECK:               "hasUserDeclaredConstructor": true,
 // CHECK-NEXT:          "isEmpty": true,
 // CHECK-NEXT:          "isStandardLayout": true,
 // CHECK-NEXT:          "isTriviallyCopyable": true,
 // CHECK-NEXT:          "moveAssign": {},
+
+// CHECK:               "nonConstCopyCtor": {
+// CHECK-NEXT:            "hasConstParam": true,
+// CHECK-NEXT:            "implicitHasConstParam": true,
+// CHECK-NEXT:            "trivial": true,
+// CHECK-NEXT:            "userDeclared": true
+// CHECK-NEXT:          }
 
 template struct CopyConstructorCheck<2>;
 // CHECK:             "kind": "ClassTemplateSpecializationDecl",
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
-// CHECK-NEXT:          "copyAssign": {
-
-// CHECK:               "copyCtor": {
-// CHECK-NEXT:            "hasConstParam": true,
-// CHECK-NEXT:            "implicitHasConstParam": true,
-// CHECK-NEXT:            "trivial": true,
-// CHECK-NEXT:            "userDeclared": true
-// CHECK-NEXT:          },
+// CHECK-NEXT:          "constCopyCtor": {
 
 // CHECK:               "hasUserDeclaredConstructor": true,
 // CHECK-NEXT:          "isEmpty": true,
@@ -130,23 +123,30 @@ template struct CopyConstructorCheck<2>;
 // CHECK-NEXT:          "isTriviallyCopyable": true,
 // CHECK-NEXT:          "moveAssign": {},
 
+// CHECK:               "nonConstCopyCtor": {
+// CHECK-NEXT:            "hasConstParam": true,
+// CHECK-NEXT:            "implicitHasConstParam": true,
+// CHECK-NEXT:            "trivial": true,
+// CHECK-NEXT:            "userDeclared": true
+// CHECK-NEXT:          }
+
 template struct CopyConstructorCheck<3>;
 // CHECK:             "kind": "ClassTemplateSpecializationDecl",
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
-// CHECK-NEXT:          "copyAssign": {
-
-// CHECK:               "copyCtor": {
-// CHECK-NEXT:            "hasConstParam": true,
-// CHECK-NEXT:            "implicitHasConstParam": true,
-// CHECK-NEXT:            "nonTrivial": true,
-// CHECK-NEXT:            "userDeclared": true
-// CHECK-NEXT:          },
+// CHECK-NEXT:          "constCopyCtor": {
 
 // CHECK:               "hasUserDeclaredConstructor": true,
 // CHECK-NEXT:          "isEmpty": true,
 // CHECK-NEXT:          "isStandardLayout": true,
 // CHECK-NEXT:          "moveAssign": {},
+
+// CHECK:               "nonConstCopyCtor": {
+// CHECK-NEXT:            "hasConstParam": true,
+// CHECK-NEXT:            "implicitHasConstParam": true,
+// CHECK-NEXT:            "nonTrivial": true,
+// CHECK-NEXT:            "userDeclared": true
+// CHECK-NEXT:          }
 
 template <int N>
 struct MoveConstructorCheck {
@@ -162,7 +162,7 @@ template struct MoveConstructorCheck<1>;
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
 // LIN-NEXT:            "canPassInRegisters": true,
-// CHECK-NEXT:          "copyAssign": {
+// CHECK-NEXT:          "constCopyCtor": {
 
 // CHECK:               "hasUserDeclaredConstructor": true,
 // CHECK-NEXT:          "isEmpty": true,
@@ -179,7 +179,7 @@ template struct MoveConstructorCheck<2>;
 // CHECK:             "kind": "ClassTemplateSpecializationDecl",
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
-// CHECK-NEXT:          "copyAssign": {
+// CHECK-NEXT:          "constCopyCtor": {
 
 // CHECK:               "hasUserDeclaredConstructor": true,
 // CHECK-NEXT:          "isEmpty": true,
@@ -196,7 +196,7 @@ template struct MoveConstructorCheck<3>;
 // CHECK:             "kind": "ClassTemplateSpecializationDecl",
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
-// CHECK-NEXT:          "copyAssign": {
+// CHECK-NEXT:          "constCopyCtor": {
 
 // CHECK:               "hasUserDeclaredConstructor": true,
 // CHECK-NEXT:          "isEmpty": true,
@@ -222,6 +222,10 @@ template struct CopyAssignmentCheck<1>;
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
 // CHECK-NEXT:          "canPassInRegisters": true,
+// CHECK-NEXT           "constCopyCtor": {
+// CHECK-NEXT             "implicitHasConstParam": true,
+// CHECK-NEXT             "trivial": true
+// CHECK-NEXT           },
 // CHECK-NEXT           "copyAssign": {
 // CHECK-NEXT             "hasConstParam": true,
 // CHECK-NEXT             "implicitHasConstParam": true,
@@ -243,6 +247,10 @@ template struct CopyAssignmentCheck<2>;
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
 // CHECK-NEXT:          "canPassInRegisters": true,
+// CHECK-NEXT           "constCopyCtor": {
+// CHECK-NEXT             "implicitHasConstParam": true,
+// CHECK-NEXT             "trivial": true
+// CHECK-NEXT           },
 // CHECK-NEXT           "copyAssign": {
 // CHECK-NEXT             "hasConstParam": true,
 // CHECK-NEXT             "implicitHasConstParam": true,
@@ -264,6 +272,10 @@ template struct CopyAssignmentCheck<3>;
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
 // CHECK-NEXT:          "canPassInRegisters": true,
+// CHECK-NEXT           "constCopyCtor": {
+// CHECK-NEXT             "implicitHasConstParam": true,
+// CHECK-NEXT             "trivial": true
+// CHECK-NEXT           },
 // CHECK-NEXT           "copyAssign": {
 // CHECK-NEXT             "hasConstParam": true,
 // CHECK-NEXT             "implicitHasConstParam": true,
@@ -291,7 +303,7 @@ template struct MoveAssignmentCheck<1>;
 // CHECK:             "kind": "ClassTemplateSpecializationDecl",
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
-// CHECK-NEXT:          "copyAssign": {
+// CHECK-NEXT:          "constCopyCtor": {
 
 // CHECK:               "hasConstexprNonCopyMoveConstructor": true,
 // CHECK-NEXT:          "isAggregate": true,
@@ -311,7 +323,7 @@ template struct MoveAssignmentCheck<2>;
 // CHECK:             "kind": "ClassTemplateSpecializationDecl",
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
-// CHECK-NEXT:          "copyAssign": {
+// CHECK-NEXT:          "constCopyCtor": {
 
 // CHECK:               "hasConstexprNonCopyMoveConstructor": true,
 // CHECK-NEXT:          "isAggregate": true,
@@ -331,7 +343,7 @@ template struct MoveAssignmentCheck<3>;
 // CHECK:             "kind": "ClassTemplateSpecializationDecl",
 // CHECK:             "definitionData": {
 // CHECK-NEXT:          "canConstDefaultInit": true,
-// CHECK-NEXT:          "copyAssign": {
+// CHECK-NEXT:          "constCopyCtor": {
 
 // CHECK:               "hasConstexprNonCopyMoveConstructor": true,
 // CHECK-NEXT:          "isAggregate": true,

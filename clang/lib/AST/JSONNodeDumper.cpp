@@ -549,7 +549,7 @@ JSONNodeDumper::createCXXRecordDefinitionData(const CXXRecordDecl *RD) {
   FIELD2("canConstDefaultInit", allowConstDefaultInit);
 
   Ret["defaultCtor"] = createDefaultConstructorDefinitionData(RD);
-  Ret["nonConstCopyCtor"] = createNonConstCopyConstructorDefinitionData(RD);
+  Ret["copyCtor"] = createNonConstCopyConstructorDefinitionData(RD);
   Ret["constCopyCtor"] = createConstCopyConstructorDefinitionData(RD);
   Ret["moveCtor"] = createMoveConstructorDefinitionData(RD);
   Ret["copyAssign"] = createCopyAssignmentDefinitionData(RD);

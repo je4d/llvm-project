@@ -7365,8 +7365,10 @@ static Sema::SpecialMemberOverloadResult lookupCallFromSpecialMember(
     Sema &S, CXXRecordDecl *Class, Sema::CXXSpecialMember CSM,
     unsigned FieldQuals, bool ConstRHS) {
   unsigned LHSQuals = 0;
-  if (CSM == Sema::CXXNonConstCopyConstructor || CSM == Sema::CXXNonConstCopyConstructor || CSM == Sema::CXXCopyAssignment || CSM == Sema::CXXMoveAssignment)
+  if (CSM == Sema::CXXCopyAssignment || CSM == Sema::CXXMoveAssignment)
     LHSQuals = FieldQuals;
+  if (CSM == Sema::CXXNonConstCopyConstructor || CSM == Sema::CXXConstCopyConstructor)
+    LHSQuals = FieldQuals & Qualifiers::Const;
 
   unsigned RHSQuals = FieldQuals;
   if (CSM == Sema::CXXDefaultConstructor || CSM == Sema::CXXDestructor)
