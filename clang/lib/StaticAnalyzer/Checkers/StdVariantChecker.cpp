@@ -43,7 +43,7 @@ getConstructorDeclarationForCall(const CallEvent &Call) {
 bool isCopyConstructorCall(const CallEvent &Call) {
   if (const CXXConstructorDecl *ConstructorDecl =
           getConstructorDeclarationForCall(Call))
-    return ConstructorDecl->isCopyConstructor();
+    return ConstructorDecl->isNonConstCopyConstructor() || ConstructorDecl->isConstCopyConstructor();
   return false;
 }
 

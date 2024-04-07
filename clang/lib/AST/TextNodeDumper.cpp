@@ -2306,7 +2306,7 @@ void TextNodeDumper::VisitCXXRecordDecl(const CXXRecordDecl *D) {
     AddChild([=] {
       {
         ColorScope Color(OS, ShowColors, DeclKindNameColor);
-        OS << "NonConstCopyConstructor";
+        OS << "CopyConstructor";
       }
       FLAG(hasSimpleCopyConstructor, simple);
       FLAG(hasTrivialNonConstCopyConstructor, trivial);
@@ -2321,22 +2321,23 @@ void TextNodeDumper::VisitCXXRecordDecl(const CXXRecordDecl *D) {
       FLAG(implicitNonConstCopyConstructorHasConstParam, implicit_has_const_param);
     });
 
-    AddChild([=] {
-      {
-        ColorScope Color(OS, ShowColors, DeclKindNameColor);
-        OS << "ConstCopyConstructor";
-      }
-      FLAG(hasTrivialConstCopyConstructor, trivial);
-      FLAG(hasNonTrivialConstCopyConstructor, non_trivial);
-      FLAG(hasUserDeclaredConstCopyConstructor, user_declared);
-      FLAG(hasConstCopyConstructorWithConstParam, has_const_param);
-      FLAG(needsImplicitConstCopyConstructor, needs_implicit);
-      FLAG(needsOverloadResolutionForCopyConstructor,
-           needs_overload_resolution);
-      if (!D->needsOverloadResolutionForCopyConstructor())
-        FLAG(defaultedConstCopyConstructorIsDeleted, defaulted_is_deleted);
-      FLAG(implicitConstCopyConstructorHasConstParam, implicit_has_const_param);
-    });
+    if (Context->getLangOpts().CPlusPlus26)
+      AddChild([=] {
+        {
+          ColorScope Color(OS, ShowColors, DeclKindNameColor);
+          OS << "ConstCopyConstructor";
+        }
+        FLAG(hasTrivialConstCopyConstructor, trivial);
+        FLAG(hasNonTrivialConstCopyConstructor, non_trivial);
+        FLAG(hasUserDeclaredConstCopyConstructor, user_declared);
+        FLAG(hasConstCopyConstructorWithConstParam, has_const_param);
+        FLAG(needsImplicitConstCopyConstructor, needs_implicit);
+        FLAG(needsOverloadResolutionForCopyConstructor,
+             needs_overload_resolution);
+        if (!D->needsOverloadResolutionForCopyConstructor())
+          FLAG(defaultedConstCopyConstructorIsDeleted, defaulted_is_deleted);
+        FLAG(implicitConstCopyConstructorHasConstParam, implicit_has_const_param);
+      });
 
     AddChild([=] {
       {
