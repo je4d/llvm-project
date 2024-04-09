@@ -4225,8 +4225,9 @@ ExprResult Sema::ActOnRequiresClause(ExprResult ConstraintExpr) {
 ExprResult Sema::ConvertMemberDefaultInitExpression(FieldDecl *FD,
                                                     Expr *InitExpr,
                                                     SourceLocation InitLoc) {
+  /* TODO: is this just an extra check to catch bad init exprs before the ctor is compiled? */
   InitializedEntity Entity =
-      InitializedEntity::InitializeMemberFromDefaultMemberInitializer(FD);
+      InitializedEntity::InitializeMemberFromDefaultMemberInitializer(FD, false);
   InitializationKind Kind =
       FD->getInClassInitStyle() == ICIS_ListInit
           ? InitializationKind::CreateDirectList(InitExpr->getBeginLoc(),
@@ -4494,7 +4495,7 @@ Sema::BuildMemInitializer(Decl *ConstructorD,
           << MemberOrBase
           << SourceRange(IdLoc, Init->getSourceRange().getEnd());
 
-    return BuildMemberInitializer(Member, Init, IdLoc);
+    return BuildMemberInitializer(Member, Init, IdLoc, Constructor->isConstConstructor());
   }
   // It didn't name a member, so see if it names a class.
   QualType BaseType;
@@ -4585,7 +4586,8 @@ Sema::BuildMemInitializer(Decl *ConstructorD,
           diagnoseTypo(Corr,
                        PDiag(diag::err_mem_init_not_member_or_class_suggest)
                          << MemberOrBase << true);
-          return BuildMemberInitializer(Member, Init, IdLoc);
+          return BuildMemberInitializer(Member, Init, IdLoc,
+                                        Constructor->isConstConstructor());
         } else if (TypeDecl *Type = Corr.getCorrectionDeclAs<TypeDecl>()) {
           const CXXBaseSpecifier *DirectBaseSpec;
           const CXXBaseSpecifier *VirtualBaseSpec;
@@ -4632,12 +4634,13 @@ Sema::BuildMemInitializer(Decl *ConstructorD,
   if (!TInfo)
     TInfo = Context.getTrivialTypeSourceInfo(BaseType, IdLoc);
 
-  return BuildBaseInitializer(BaseType, TInfo, Init, ClassDecl, EllipsisLoc);
+  return BuildBaseInitializer(BaseType, TInfo, Init, ClassDecl, EllipsisLoc, Constructor->isConstConstructor());
 }
 
 MemInitResult
 Sema::BuildMemberInitializer(ValueDecl *Member, Expr *Init,
-                             SourceLocation IdLoc) {
+                             SourceLocation IdLoc,
+                             bool InitializeAsConst) {
   FieldDecl *DirectMember = dyn_cast<FieldDecl>(Member);
   IndirectFieldDecl *IndirectMember = dyn_cast<IndirectFieldDecl>(Member);
   assert((DirectMember || IndirectMember) &&
@@ -4674,8 +4677,11 @@ Sema::BuildMemberInitializer(ValueDecl *Member, Expr *Init,
 
     // Initialize the member.
     InitializedEntity MemberEntity =
-      DirectMember ? InitializedEntity::InitializeMember(DirectMember, nullptr)
+      DirectMember ? InitializedEntity::InitializeMember(DirectMember,
+                                                         InitializeAsConst,
+                                                         nullptr)
                    : InitializedEntity::InitializeMember(IndirectMember,
+                                                         InitializeAsConst,
                                                          nullptr);
     InitializationKind Kind =
         InitList ? InitializationKind::CreateDirectList(
@@ -4784,7 +4790,8 @@ Sema::BuildDelegatingInitializer(TypeSourceInfo *TInfo, Expr *Init,
 MemInitResult
 Sema::BuildBaseInitializer(QualType BaseType, TypeSourceInfo *BaseTInfo,
                            Expr *Init, CXXRecordDecl *ClassDecl,
-                           SourceLocation EllipsisLoc) {
+                           SourceLocation EllipsisLoc,
+                           bool InitializeAsConst) {
   SourceLocation BaseLoc = BaseTInfo->getTypeLoc().getBeginLoc();
 
   if (!BaseType->isDependentType() && !BaseType->isRecordType())
@@ -4882,7 +4889,7 @@ Sema::BuildBaseInitializer(QualType BaseType, TypeSourceInfo *BaseTInfo,
   }
 
   InitializedEntity BaseEntity =
-    InitializedEntity::InitializeBase(Context, BaseSpec, VirtualBaseSpec);
+    InitializedEntity::InitializeBase(Context, BaseSpec, VirtualBaseSpec, InitializeAsConst);
   InitializationKind Kind =
       InitList ? InitializationKind::CreateDirectList(BaseLoc)
                : InitializationKind::CreateDirect(BaseLoc, InitRange.getBegin(),
@@ -4952,7 +4959,8 @@ BuildImplicitBaseInitializer(Sema &SemaRef, CXXConstructorDecl *Constructor,
                              CXXCtorInitializer *&CXXBaseInit) {
   InitializedEntity InitEntity
     = InitializedEntity::InitializeBase(SemaRef.Context, BaseSpec,
-                                        IsInheritedVirtualBase);
+                                        IsInheritedVirtualBase,
+                                        Constructor->isConstConstructor());
 
   ExprResult BaseInit;
 
@@ -5084,10 +5092,15 @@ BuildImplicitMemberInitializer(Sema &SemaRef, CXXConstructorDecl *Constructor,
       CtorArg = CastForMoving(SemaRef, CtorArg.get());
     }
 
+    // TODO: pass information about the constness of the target object to these functions
     InitializedEntity Entity =
-        Indirect ? InitializedEntity::InitializeMember(Indirect, nullptr,
+        Indirect ? InitializedEntity::InitializeMember(Indirect,
+                                                       Constructor->isConstConstructor(),
+                                                       nullptr,
                                                        /*Implicit*/ true)
-                 : InitializedEntity::InitializeMember(Field, nullptr,
+                 : InitializedEntity::InitializeMember(Field,
+                                                       Constructor->isConstConstructor(),
+                                                       nullptr,
                                                        /*Implicit*/ true);
 
     // Direct-initialize to use the copy constructor.
@@ -5119,9 +5132,13 @@ BuildImplicitMemberInitializer(Sema &SemaRef, CXXConstructorDecl *Constructor,
 
   if (FieldBaseElementType->isRecordType()) {
     InitializedEntity InitEntity =
-        Indirect ? InitializedEntity::InitializeMember(Indirect, nullptr,
+        Indirect ? InitializedEntity::InitializeMember(Indirect,
+                                                       Constructor->isConstConstructor(),
+                                                       nullptr,
                                                        /*Implicit*/ true)
-                 : InitializedEntity::InitializeMember(Field, nullptr,
+                 : InitializedEntity::InitializeMember(Field,
+                                                       Constructor->isConstConstructor(),
+                                                       nullptr,
                                                        /*Implicit*/ true);
     InitializationKind InitKind =
       InitializationKind::CreateDefault(Loc);
@@ -5293,6 +5310,7 @@ static bool isIncompleteOrZeroLengthArrayType(ASTContext &Context, QualType T) {
 }
 
 static bool CollectFieldInitializer(Sema &SemaRef, BaseAndFieldInfo &Info,
+                                    bool InitializeAsConst,
                                     FieldDecl *Field,
                                     IndirectFieldDecl *Indirect = nullptr) {
   if (Field->isInvalidDecl())
@@ -5324,7 +5342,7 @@ static bool CollectFieldInitializer(Sema &SemaRef, BaseAndFieldInfo &Info,
     if (DIE.isInvalid())
       return true;
 
-    auto Entity = InitializedEntity::InitializeMember(Field, nullptr, true);
+    auto Entity = InitializedEntity::InitializeMember(Field, InitializeAsConst, nullptr, true);
     SemaRef.checkInitializerLifetime(Entity, DIE.get());
 
     CXXCtorInitializer *Init;
@@ -5516,7 +5534,7 @@ bool Sema::SetCtorInitializers(CXXConstructorDecl *Constructor, bool AnyErrors,
       if (F->isAnonymousStructOrUnion() && !Info.isImplicitCopyOrMove())
         continue;
 
-      if (CollectFieldInitializer(*this, Info, F))
+      if (CollectFieldInitializer(*this, Info, Constructor->isConstConstructor(), F))
         HadError = true;
       continue;
     }
@@ -5533,7 +5551,7 @@ bool Sema::SetCtorInitializers(CXXConstructorDecl *Constructor, bool AnyErrors,
       }
 
       // Initialize each field of an anonymous struct individually.
-      if (CollectFieldInitializer(*this, Info, F->getAnonField(), F))
+      if (CollectFieldInitializer(*this, Info, Constructor->isConstConstructor(), F->getAnonField(), F))
         HadError = true;
 
       continue;
@@ -18909,7 +18927,7 @@ void Sema::SetIvarInitializers(ObjCImplementationDecl *ObjCImplementation) {
         continue;
 
       CXXCtorInitializer *Member;
-      InitializedEntity InitEntity = InitializedEntity::InitializeMember(Field);
+      InitializedEntity InitEntity = InitializedEntity::InitializeMember(Field, false);
       InitializationKind InitKind =
         InitializationKind::CreateDefault(ObjCImplementation->getLocation());
 

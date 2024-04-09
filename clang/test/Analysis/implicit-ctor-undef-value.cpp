@@ -20,7 +20,7 @@ public:
 
 void test() {
   C c1;
-  C c2(c1); // expected-note{{Calling implicit non-const copy constructor for 'C'}}
+  C c2(c1); // expected-note{{Calling implicit copy constructor for 'C'}}
 }
 } // end namespace implicit_constructor
 
@@ -41,7 +41,7 @@ public:
 
 void test() {
   C c1;
-  C c2(c1); // expected-note{{Calling non-const copy constructor for 'C'}}
+  C c2(c1); // expected-note{{Calling copy constructor for 'C'}}
 }
 } // end namespace explicit_constructor
 
@@ -69,7 +69,7 @@ public:
 
 void test() {
   D d1;
-  D d2(d1); // expected-note   {{Calling implicit non-const copy constructor for 'D'}}
-            // expected-note@-1{{Calling implicit non-const copy constructor for 'C'}}
+  D d2(d1); // expected-note   {{Calling implicit copy constructor for 'D'}}
+            // expected-note@-1{{Calling implicit copy constructor for 'C'}}
 }
 } // end namespace base_class_constructor

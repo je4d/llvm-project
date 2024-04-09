@@ -76,7 +76,7 @@ void Example3() {
   constexpr struct S s = {
       .x = __INT_MAX__,
       .y = UINT_MAX,
-      // expected-error@-1 {{constexpr initializer evaluates to 4294967295 which is not exactly representable in type 'int'}}
+      // expected-error@-1 {{constexpr initializer evaluates to 4294967295 which is not exactly representable in type 'const int'}}
   };
 }
 

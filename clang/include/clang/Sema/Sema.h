@@ -4303,12 +4303,14 @@ public:
                                     Expr *Init, SourceLocation EllipsisLoc);
 
   MemInitResult BuildMemberInitializer(ValueDecl *Member, Expr *Init,
-                                       SourceLocation IdLoc);
+                                       SourceLocation IdLoc,
+                                       bool InitializeAsConst);
 
   MemInitResult BuildBaseInitializer(QualType BaseType,
                                      TypeSourceInfo *BaseTInfo, Expr *Init,
                                      CXXRecordDecl *ClassDecl,
-                                     SourceLocation EllipsisLoc);
+                                     SourceLocation EllipsisLoc,
+                                     bool InitializeAsConst);
 
   MemInitResult BuildDelegatingInitializer(TypeSourceInfo *TInfo, Expr *Init,
                                            CXXRecordDecl *ClassDecl);
