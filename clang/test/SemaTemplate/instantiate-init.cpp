@@ -99,7 +99,7 @@ namespace PR7985 {
   };
 
   template<typename T>
-  const Data<T> Description<T>::data[] = {{ 1 }}; // expected-error{{cannot initialize a member subobject of type 'int *' with an rvalue of type 'int'}}
+  const Data<T> Description<T>::data[] = {{ 1 }}; // expected-error{{cannot initialize a member subobject of type 'int *const' with an rvalue of type 'int'}}
 
   template<>
   const Data<float*> Description<float*>::data[];

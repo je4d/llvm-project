@@ -5825,7 +5825,8 @@ Sema::InstantiateMemInitializers(CXXConstructorDecl *New,
         MemInitResult NewInit = BuildBaseInitializer(BaseTInfo->getType(),
                                                      BaseTInfo, TempInit.get(),
                                                      New->getParent(),
-                                                     SourceLocation());
+                                                     SourceLocation(),
+                                                     New->isConstConstructor());
         if (NewInit.isInvalid()) {
           AnyErrors = true;
           break;
@@ -5859,7 +5860,7 @@ Sema::InstantiateMemInitializers(CXXConstructorDecl *New,
 
       if (Init->isBaseInitializer())
         NewInit = BuildBaseInitializer(TInfo->getType(), TInfo, TempInit.get(),
-                                       New->getParent(), EllipsisLoc);
+                                       New->getParent(), EllipsisLoc, New->isConstConstructor());
       else
         NewInit = BuildDelegatingInitializer(TInfo, TempInit.get(),
                                   cast<CXXRecordDecl>(CurContext->getParent()));
@@ -5875,7 +5876,8 @@ Sema::InstantiateMemInitializers(CXXConstructorDecl *New,
       }
 
       NewInit = BuildMemberInitializer(Member, TempInit.get(),
-                                       Init->getSourceLocation());
+                                       Init->getSourceLocation(),
+                                       New->isConstConstructor());
     } else if (Init->isIndirectMemberInitializer()) {
       IndirectFieldDecl *IndirectMember =
          cast_or_null<IndirectFieldDecl>(FindInstantiatedDecl(
@@ -5889,7 +5891,8 @@ Sema::InstantiateMemInitializers(CXXConstructorDecl *New,
       }
 
       NewInit = BuildMemberInitializer(IndirectMember, TempInit.get(),
-                                       Init->getSourceLocation());
+                                       Init->getSourceLocation(),
+                                       New->isConstConstructor());
     }
 
     if (NewInit.isInvalid()) {

@@ -230,11 +230,13 @@ private:
   }
 
   /// Create the initialization entity for a member subobject.
-  InitializedEntity(FieldDecl *Member, const InitializedEntity *Parent,
+  InitializedEntity(FieldDecl *Member,
+                    bool InitializeAsConst,
+                    const InitializedEntity *Parent,
                     bool Implicit, bool DefaultMemberInit,
                     bool IsParenAggInit = false)
-      : Kind(IsParenAggInit ? EK_ParenAggInitMember : EK_Member),
-        Parent(Parent), Type(Member->getType()),
+      : Kind(IsParenAggInit ? EK_ParenAggInitMember : EK_Member), Parent(Parent),
+        Type(getTypeForInitialization(Member, InitializeAsConst)),
         Variable{Member, Implicit, DefaultMemberInit} {}
 
   /// Create the initialization entity for an array element.
@@ -249,7 +251,33 @@ private:
     Capture.Location = Loc;
   }
 
+  static QualType getTypeForInitialization(FieldDecl* Member, bool InitializeAsConst) {
+    ASTContext& Context = Member->getASTContext();
+
+    QualType MemberType = Member->getType();
+    if (!InitializeAsConst || Member->isMutable())
+      return MemberType;
+
+    Qualifiers MemberQuals = Context.getCanonicalType(MemberType).getQualifiers();
+    if (MemberQuals.hasConst())
+      return MemberType;
+
+    MemberQuals.addConst();
+
+    return Context.getQualifiedType(MemberType, MemberQuals);
+  }
+
+  static QualType getTypeForInitialization(ASTContext& Context, const CXXBaseSpecifier* Base,
+                                           bool InitializeAsConst) {
+    QualType BaseType = Base->getType();
+    if (!InitializeAsConst)
+      return BaseType;
+
+    return Context.getQualifiedType(BaseType, Qualifiers::fromCVRMask(Qualifiers::Const));
+  }
+
 public:
+
   /// Create the initialization entity for a variable.
   static InitializedEntity InitializeVariable(VarDecl *Var) {
     return InitializedEntity(Var);
@@ -369,8 +397,10 @@ public:
 
   /// Create the initialization entity for a base class subobject.
   static InitializedEntity
-  InitializeBase(ASTContext &Context, const CXXBaseSpecifier *Base,
+  InitializeBase(ASTContext& Context,
+                 const CXXBaseSpecifier *Base,
                  bool IsInheritedVirtualBase,
+                 bool InitializeAsConst,
                  const InitializedEntity *Parent = nullptr);
 
   /// Create the initialization entity for a delegated constructor.
@@ -381,31 +411,36 @@ public:
   /// Create the initialization entity for a member subobject.
   static InitializedEntity
   InitializeMember(FieldDecl *Member,
+                   bool InitializeAsConst,
                    const InitializedEntity *Parent = nullptr,
                    bool Implicit = false) {
-    return InitializedEntity(Member, Parent, Implicit, false);
+    return InitializedEntity(Member, InitializeAsConst, Parent, Implicit, false, false);
   }
 
   /// Create the initialization entity for a member subobject.
   static InitializedEntity
   InitializeMember(IndirectFieldDecl *Member,
+                   bool InitializeAsConst,
                    const InitializedEntity *Parent = nullptr,
                    bool Implicit = false) {
-    return InitializedEntity(Member->getAnonField(), Parent, Implicit, false);
+    return InitializedEntity(Member->getAnonField(), InitializeAsConst, Parent, Implicit, false, false);
   }
 
   /// Create the initialization entity for a member subobject initialized via
   /// parenthesized aggregate init.
-  static InitializedEntity InitializeMemberFromParenAggInit(FieldDecl *Member) {
-    return InitializedEntity(Member, /*Parent=*/nullptr, /*Implicit=*/false,
+  static InitializedEntity InitializeMemberFromParenAggInit(FieldDecl *Member,
+                                                            bool InitializeAsConst) {
+    return InitializedEntity(Member, InitializeAsConst,
+                             /*Parent=*/nullptr, /*Implicit=*/false,
                              /*DefaultMemberInit=*/false,
                              /*IsParenAggInit=*/true);
   }
 
   /// Create the initialization entity for a default member initializer.
   static InitializedEntity
-  InitializeMemberFromDefaultMemberInitializer(FieldDecl *Member) {
-    return InitializedEntity(Member, nullptr, false, true);
+  InitializeMemberFromDefaultMemberInitializer(FieldDecl *Member,
+                                               bool InitializeAsConst) {
+    return InitializedEntity(Member, InitializeAsConst, nullptr, false, true);
   }
 
   /// Create the initialization entity for an array element.

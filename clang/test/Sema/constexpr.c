@@ -215,7 +215,7 @@ struct S8 {
 };
 
 constexpr struct S8 DesigInit = {.b = {299, 7, 8}, .a = {-1, 7, 8}};
-// expected-error@-1 {{constexpr initializer evaluates to -1 which is not exactly representable in type 'unsigned char'}}
+// expected-error@-1 {{constexpr initializer evaluates to -1 which is not exactly representable in type 'const unsigned char'}}
 
 void f5() {
   constexpr char V50 = 300;
@@ -236,9 +236,9 @@ void f5() {
       u8"\xAF",
   };
   constexpr struct S6 V57 = {299};
-  // expected-error@-1 {{constexpr initializer evaluates to 299 which is not exactly representable in type 'unsigned char'}}
+  // expected-error@-1 {{constexpr initializer evaluates to 299 which is not exactly representable in type 'const unsigned char'}}
   constexpr struct S6 V58 = {-299};
-  // expected-error@-1 {{constexpr initializer evaluates to -299 which is not exactly representable in type 'unsigned char'}}
+  // expected-error@-1 {{constexpr initializer evaluates to -299 which is not exactly representable in type 'const unsigned char'}}
   constexpr double V59 = 0.5;
   constexpr double V60 = 1.0;
   constexpr float V61 = V59 / V60;
@@ -253,22 +253,22 @@ void f5() {
   constexpr char V66[3] = {300};
   // expected-error@-1 {{constexpr initializer evaluates to 300 which is not exactly representable in type 'const char'}}
   constexpr struct S6 V67[3] = {300};
-  // expected-error@-1 {{constexpr initializer evaluates to 300 which is not exactly representable in type 'unsigned char'}}
+  // expected-error@-1 {{constexpr initializer evaluates to 300 which is not exactly representable in type 'const unsigned char'}}
 
   constexpr struct S7 V68 = {0.3, -1 };
-  // expected-error@-1 {{constexpr initializer evaluates to 3.000000e-01 which is not exactly representable in type 'float'}}
-  // expected-error@-2 {{constexpr initializer evaluates to -1 which is not exactly representable in type 'unsigned int'}}
+  // expected-error@-1 {{constexpr initializer evaluates to 3.000000e-01 which is not exactly representable in type 'const float'}}
+  // expected-error@-2 {{constexpr initializer evaluates to -1 which is not exactly representable in type 'const unsigned int'}}
   constexpr struct S7 V69 = {0.5, -1 };
-  // expected-error@-1 {{constexpr initializer evaluates to -1 which is not exactly representable in type 'unsigned int'}}
+  // expected-error@-1 {{constexpr initializer evaluates to -1 which is not exactly representable in type 'const unsigned int'}}
   constexpr struct S7 V70[3] = {{123456789}};
-  // expected-error@-1 {{constexpr initializer evaluates to 123456789 which is not exactly representable in type 'float'}}
+  // expected-error@-1 {{constexpr initializer evaluates to 123456789 which is not exactly representable in type 'const float'}}
 
   constexpr int V71 = 0.3;
   // expected-error@-1 {{constexpr initializer for type 'const int' is of type 'double'}}
   constexpr int V72 = V59;
   // expected-error@-1 {{constexpr initializer for type 'const int' is of type 'const double'}}
   constexpr struct S6 V73 = {V59};
-  // expected-error@-1 {{constexpr initializer for type 'unsigned char' is of type 'const double'}}
+  // expected-error@-1 {{constexpr initializer for type 'const unsigned char' is of type 'const double'}}
 
   constexpr float V74 = 1;
   constexpr float V75 = V59;

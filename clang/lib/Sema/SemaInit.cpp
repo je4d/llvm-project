@@ -650,7 +650,8 @@ void InitListChecker::FillInEmptyInitForBase(
     const InitializedEntity &ParentEntity, InitListExpr *ILE,
     bool &RequiresSecondPass, bool FillWithNoInit) {
   InitializedEntity BaseEntity = InitializedEntity::InitializeBase(
-      SemaRef.Context, &Base, false, &ParentEntity);
+      SemaRef.Context, &Base, false,
+      ParentEntity.getType().getQualifiers().hasConst(), &ParentEntity);
 
   if (Init >= ILE->getNumInits() || !ILE->getInit(Init)) {
     ExprResult BaseInit = FillWithNoInit
@@ -685,7 +686,7 @@ void InitListChecker::FillInEmptyInitForField(unsigned Init, FieldDecl *Field,
   SourceLocation Loc = ILE->getEndLoc();
   unsigned NumInits = ILE->getNumInits();
   InitializedEntity MemberEntity
-    = InitializedEntity::InitializeMember(Field, &ParentEntity);
+    = InitializedEntity::InitializeMember(Field, ParentEntity.getType().getQualifiers().hasConst(), &ParentEntity);
 
   if (Init >= NumInits || !ILE->getInit(Init)) {
     if (const RecordType *RType = ILE->getType()->getAs<RecordType>())
@@ -2176,7 +2177,7 @@ void InitListChecker::CheckStructUnionTypes(
          Field != FieldEnd; ++Field) {
       if (!Field->isUnnamedBitfield()) {
         CheckEmptyInitializable(
-            InitializedEntity::InitializeMember(*Field, &Entity),
+            InitializedEntity::InitializeMember(*Field, Entity.getType().getQualifiers().hasConst(), &Entity),
             IList->getEndLoc());
         if (StructuredList)
           StructuredList->setInitializedFieldInUnion(*Field);
@@ -2228,7 +2229,7 @@ void InitListChecker::CheckStructUnionTypes(
 
     SourceLocation InitLoc = Init ? Init->getBeginLoc() : IList->getEndLoc();
     InitializedEntity BaseEntity = InitializedEntity::InitializeBase(
-        SemaRef.Context, &Base, false, &Entity);
+        SemaRef.Context, &Base, false, Entity.getType().getQualifiers().hasConst(), &Entity);
     if (Init) {
       CheckSubElementType(BaseEntity, IList, Base.getType(), Index,
                           StructuredList, StructuredIndex);
@@ -2366,7 +2367,7 @@ void InitListChecker::CheckStructUnionTypes(
     }
 
     InitializedEntity MemberEntity =
-      InitializedEntity::InitializeMember(*Field, &Entity);
+      InitializedEntity::InitializeMember(*Field, Entity.getType().getQualifiers().hasConst(), &Entity);
     CheckSubElementType(MemberEntity, IList, Field->getType(), Index,
                         StructuredList, StructuredIndex);
     InitializedSomething = true;
@@ -2415,7 +2416,7 @@ void InitListChecker::CheckStructUnionTypes(
     for (; Field != FieldEnd && !hadError; ++Field) {
       if (!Field->isUnnamedBitfield() && !Field->hasInClassInitializer())
         CheckEmptyInitializable(
-            InitializedEntity::InitializeMember(*Field, &Entity),
+            InitializedEntity::InitializeMember(*Field, Entity.getType().getQualifiers().hasConst(), &Entity),
             IList->getEndLoc());
     }
   }
@@ -2447,7 +2448,7 @@ void InitListChecker::CheckStructUnionTypes(
   }
 
   InitializedEntity MemberEntity =
-    InitializedEntity::InitializeMember(*Field, &Entity);
+    InitializedEntity::InitializeMember(*Field, Entity.getType().getQualifiers().hasConst(), &Entity);
 
   if (isa<InitListExpr>(IList->getInit(Index)) ||
       AggrDeductionCandidateParamTypes)
@@ -2940,7 +2941,7 @@ InitListChecker::CheckDesignatedInitializer(const InitializedEntity &Entity,
       IList->setInit(Index, DIE->getInit());
 
       InitializedEntity MemberEntity =
-        InitializedEntity::InitializeMember(*Field, &Entity);
+        InitializedEntity::InitializeMember(*Field, Entity.getType().getQualifiers().hasConst(), &Entity);
       CheckSubElementType(MemberEntity, IList, Field->getType(), Index,
                           StructuredList, newStructuredIndex);
 
@@ -2959,7 +2960,7 @@ InitListChecker::CheckDesignatedInitializer(const InitializedEntity &Entity,
       unsigned newStructuredIndex = FieldIndex;
 
       InitializedEntity MemberEntity =
-        InitializedEntity::InitializeMember(*Field, &Entity);
+        InitializedEntity::InitializeMember(*Field, Entity.getType().getQualifiers().hasConst(), &Entity);
       if (CheckDesignatedInitializer(MemberEntity, IList, DIE, DesigIdx + 1,
                                      FieldType, nullptr, nullptr, Index,
                                      StructuredList, newStructuredIndex,
@@ -3466,15 +3467,16 @@ InitializedEntity::InitializedEntity(ASTContext &Context, unsigned Index,
 }
 
 InitializedEntity
-InitializedEntity::InitializeBase(ASTContext &Context,
+InitializedEntity::InitializeBase(ASTContext& Context,
                                   const CXXBaseSpecifier *Base,
                                   bool IsInheritedVirtualBase,
+                                  bool InitializeAsConst,
                                   const InitializedEntity *Parent) {
   InitializedEntity Result;
   Result.Kind = EK_Base;
   Result.Parent = Parent;
   Result.Base = {Base, IsInheritedVirtualBase};
-  Result.Type = Base->getType();
+  Result.Type = getTypeForInitialization(Context, Base, InitializeAsConst);
   return Result;
 }
 
@@ -4134,6 +4136,8 @@ static OverloadingResult ResolveConstructorOverload(
     if (OnlyListConstructors && !S.isInitListConstructor(Info.Constructor))
       continue;
 
+    if (!DestType.getQualifiers().hasConst() && Info.Constructor->isConstConstructor())
+      continue;
     // C++11 [over.best.ics]p4:
     //   ... and the constructor or user-defined conversion function is a
     //   candidate by
@@ -5554,7 +5558,8 @@ static void TryOrBuildParenListInitialization(
     if (!IsUnion) {
       for (const CXXBaseSpecifier &Base : RD->bases()) {
         InitializedEntity SubEntity = InitializedEntity::InitializeBase(
-            S.getASTContext(), &Base, false, &Entity);
+            S.getASTContext(), &Base, false,
+            Entity.getType().getQualifiers().hasConst(), &Entity);
         if (EntityIndexToProcess < Args.size()) {
           // C++ [dcl.init]p16.6.2.2.
           //   ...the object is initialized is follows. Let e1, ..., en be the
@@ -5588,7 +5593,7 @@ static void TryOrBuildParenListInitialization(
         continue;
 
       InitializedEntity SubEntity =
-          InitializedEntity::InitializeMemberFromParenAggInit(FD);
+          InitializedEntity::InitializeMemberFromParenAggInit(FD, Entity.getType().getQualifiers().hasConst());
 
       if (EntityIndexToProcess < Args.size()) {
         //   ...The element ei is copy-initialized with xi for 1 <= i <= k.
