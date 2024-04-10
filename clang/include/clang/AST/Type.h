@@ -1038,28 +1038,40 @@ public:
   /// through typedefs.
   QualType getLocalUnqualifiedType() const { return QualType(getTypePtr(), 0); }
 
-  /// Retrieve the unqualified variant of the given type,
+  /// Retrieve the qualifier-masked variant of the given type,
   /// removing as little sugar as possible.
   ///
+  /// The qualifier-masked variant of a type is the given type with all
+  /// top-level qualifiers removed except those present in \c QualifierMask.
+  ///
   /// This routine looks through various kinds of sugar to find the
-  /// least-desugared type that is unqualified. For example, given:
+  /// least-desugared type that is only qualified by qualifiers present in \c
+  /// QualifierMask. For example, given:
   ///
   /// \code
-  /// typedef int Integer;
-  /// typedef const Integer CInteger;
+  /// typedef volatile int Integer;
+  /// typedef const volatile Integer CInteger;
   /// typedef CInteger DifferenceType;
   /// \endcode
   ///
-  /// Executing \c getUnqualifiedType() on the type \c DifferenceType will
-  /// desugar until we hit the type \c Integer, which has no qualifiers on it.
+  /// Executing \c getUnqualifiedType(Qualifiers::Volatile) on the type \c
+  /// DifferenceType will desugar until we hit the type \c Integer, which has
+  /// no qualifiers on it except \c volatile, which is in \c QualifierMask..
   ///
-  /// The resulting type might still be qualified if it's sugar for an array
-  /// type.  To strip qualifiers even from within a sugared array type, use
+  /// The resulting type might still have qualifiers that are not present in \c
+  /// QualifierMask  if it's sugar for an array type.  To strip qualifiers even
+  /// from within a sugared array type, use
   /// ASTContext::getUnqualifiedArrayType.
   ///
   /// Note: In C, the _Atomic qualifier is special (see C23 6.2.5p32 for
   /// details), and it is not stripped by this function. Use
   /// getAtomicUnqualifiedType() to strip qualifiers including _Atomic.
+  inline QualType getQualifierMaskedType(unsigned QualifierMask) const;
+
+  /// Retrieve the unqualified variant of the given type,
+  /// removing as little sugar as possible.
+  ///
+  /// Like getQualifierMaskedType, with a QualifierMask of 0.
   inline QualType getUnqualifiedType() const;
 
   /// Retrieve the unqualified variant of the given type, removing as little
@@ -1429,7 +1441,8 @@ private:
   static bool isConstant(QualType T, const ASTContext& Ctx);
   static QualType getDesugaredType(QualType T, const ASTContext &Context);
   static SplitQualType getSplitDesugaredType(QualType T);
-  static SplitQualType getSplitUnqualifiedTypeImpl(QualType type);
+  static SplitQualType getSplitQualifierMaskedTypeImpl(QualType type,
+                                                       unsigned QualifierMask);
   static QualType getSingleStepDesugaredTypeImpl(QualType type,
                                                  const ASTContext &C);
   static QualType IgnoreParens(QualType T);
@@ -7270,18 +7283,26 @@ inline bool QualType::hasQualifiers() const {
          getCommonPtr()->CanonicalType.hasLocalQualifiers();
 }
 
-inline QualType QualType::getUnqualifiedType() const {
-  if (!getTypePtr()->getCanonicalTypeInternal().hasLocalQualifiers())
-    return QualType(getTypePtr(), 0);
+inline QualType QualType::getQualifierMaskedType(unsigned QualifierMask) const
+{
+  QualType canonicalType = getTypePtr()->getCanonicalTypeInternal();
+  if (!(canonicalType.hasLocalNonFastQualifiers() || canonicalType.getLocalFastQualifiers() & ~QualifierMask)) {
+    return QualType(getTypePtr(), getLocalFastQualifiers() & QualifierMask);
+  }
 
-  return QualType(getSplitUnqualifiedTypeImpl(*this).Ty, 0);
+  SplitQualType splitTy = getSplitQualifierMaskedTypeImpl(*this, QualifierMask);
+  return QualType(splitTy.Ty, (splitTy.Quals.getFastQualifiers() | getLocalFastQualifiers()) & QualifierMask);
+}
+
+inline QualType QualType::getUnqualifiedType() const {
+  return getQualifierMaskedType(0);
 }
 
 inline SplitQualType QualType::getSplitUnqualifiedType() const {
   if (!getTypePtr()->getCanonicalTypeInternal().hasLocalQualifiers())
     return split();
 
-  return getSplitUnqualifiedTypeImpl(*this);
+  return getSplitQualifierMaskedTypeImpl(*this, 0);
 }
 
 inline void QualType::removeLocalConst() {

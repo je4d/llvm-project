@@ -507,14 +507,14 @@ SplitQualType QualType::getSplitDesugaredType(QualType T) {
   }
 }
 
-SplitQualType QualType::getSplitUnqualifiedTypeImpl(QualType type) {
+SplitQualType QualType::getSplitQualifierMaskedTypeImpl(QualType type, unsigned QualifierMask) {
   SplitQualType split = type.split();
 
   // All the qualifiers we've seen so far.
   Qualifiers quals = split.Quals;
 
   // The last type node we saw with any nodes inside it.
-  const Type *lastTypeWithQuals = split.Ty;
+  const Type *lastTypeWithUnmaskedQuals = split.Ty;
 
   while (true) {
     QualType next;
@@ -536,14 +536,14 @@ SplitQualType QualType::getSplitUnqualifiedTypeImpl(QualType type) {
     // Otherwise, split the underlying type.  If that yields qualifiers,
     // update the information.
     split = next.split();
-    if (!split.Quals.empty()) {
-      lastTypeWithQuals = split.Ty;
+    if (split.Quals.isStrictSupersetOf(Qualifiers::fromFastMask(QualifierMask))) {
+      lastTypeWithUnmaskedQuals = split.Ty;
       quals.addConsistentQualifiers(split.Quals);
     }
   }
 
  done:
-  return SplitQualType(lastTypeWithQuals, quals);
+  return SplitQualType(lastTypeWithUnmaskedQuals, quals);
 }
 
 QualType QualType::IgnoreParens(QualType T) {
