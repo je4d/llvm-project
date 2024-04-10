@@ -18,5 +18,5 @@ void bar(void) {
   // CHECK: ImplicitCastExpr {{.*}} <col:{{.*}}> 'void *' <NullToPointer>
 
   foo2(0);
-  // CHECK: ImplicitCastExpr {{.*}} <col:{{.*}}> 'void *' <NullToPointer>
+  // CHECK: ImplicitCastExpr {{.*}} <col:{{.*}}> 'void *const' <NullToPointer>
 }

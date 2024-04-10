@@ -299,7 +299,7 @@ public:
     InitializedEntity Entity;
     Entity.Kind = EK_Parameter;
     Entity.Type =
-      Context.getVariableArrayDecayedType(Type.getUnqualifiedType());
+      Context.getVariableArrayDecayedType(Type.getQualifierMaskedType(Qualifiers::Const));
     Entity.Parent = nullptr;
     Entity.Parameter = {Parm, Consumed};
     return Entity;
