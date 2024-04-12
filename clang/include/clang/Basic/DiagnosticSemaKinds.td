@@ -4661,6 +4661,14 @@ def ext_param_promoted_not_compatible_with_prototype : ExtWarn<
   "with parameter type}0,1 declared in a previous prototype">,
   InGroup<KNRPromotedParameter>;
 
+def err_cxx26_function_parameter_redeclared_non_const : Error<
+  "redeclaration of %0 has a non-const %ordinal1 parameter type (%2)">;
+def note_cxx26_function_parameter_previously_const : Note<
+  "%ordinal0 parameter previously declared as a const type (%1) here">;
+def err_cxx26_function_parameter_redeclared_const_after_defn : Error<
+  "redeclaration of %0 must have a non-const %ordinal1 parameter type, not %2">;
+def note_cxx26_function_parameter_defined_non_const : Note<
+  "because the %ordinal0 parameter type (%1) was non-const when it was defined here">;
 
 // C++ Overloading Semantic Analysis.
 def err_ovl_diff_return_type : Error<
