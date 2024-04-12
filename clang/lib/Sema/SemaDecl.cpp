@@ -4057,6 +4057,26 @@ bool Sema::MergeFunctionDecl(FunctionDecl *New, NamedDecl *&OldD, Scope *S,
           << getSpecialMember(OldMethod);
         return true;
       }
+
+    }
+
+    if (getLangOpts().CPlusPlus26) {
+      assert((Old->getNumParams() == New->getNumParams()) && "C++ methods differ in parameter counts");
+      int paramNum = 1;
+      for (auto oldIt = Old->param_begin(), oldEnd = Old->param_end(),
+                newIt = New->param_begin();
+           oldIt != oldEnd; ++oldIt, ++newIt, ++paramNum) {
+        if ((*oldIt)->getType().isConstQualified() && !(*newIt)->getType().isConstQualified()) {
+          Diag(New->getLocation(), diag::err_cxx26_function_parameter_redeclared_non_const) << New << paramNum << (*newIt)->getType();
+          Diag(OldLocation, diag::note_cxx26_function_parameter_previously_const) << paramNum << (*oldIt)->getType();
+          return true;
+        } else if (!(*oldIt)->getType().isConstQualified() && (*newIt)->getType().isConstQualified() && Old->isDefined()) {
+          const FunctionDecl* Def = Old->getDefinition();
+          Diag(New->getLocation(), diag::err_cxx26_function_parameter_redeclared_const_after_defn) << New << paramNum << (*newIt)->getType();
+          Diag(Def->getLocation(), diag::note_cxx26_function_parameter_defined_non_const) << paramNum << (*oldIt)->getType();
+          return true;
+        }
+      }
     }
 
     // C++1z [over.load]p2
