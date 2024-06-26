@@ -203,33 +203,26 @@ struct _IsFancyPointer {
 // enable_if is needed here to avoid instantiating checks for fancy pointers on raw pointers
 template <class _Pointer, __enable_if_t< _And<is_class<_Pointer>, _IsFancyPointer<_Pointer> >::value, int> = 0>
 _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR
-    __decay_t<decltype(__to_address_helper<_Pointer>::__call(std::declval<_Pointer&>()))>
-    __to_address(_Pointer& __p) _NOEXCEPT {
-  return __to_address_helper<_Pointer>::__call(__p);
-}
-
-template <class _Pointer, __enable_if_t< _And<is_class<_Pointer>, _IsFancyPointer<_Pointer> >::value, int> = 0>
-_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR
-    __decay_t<decltype(__to_address_helper<const _Pointer>::__call(std::declval<const _Pointer&>()))>
+    __decay_t<decltype(__to_address_helper<_Pointer>::__call(std::declval<const _Pointer&>()))>
     __to_address(const _Pointer& __p) _NOEXCEPT {
-  return __to_address_helper<const _Pointer>::__call(__p);
+  return __to_address_helper<_Pointer>::__call(__p);
 }
 
 template <class _Pointer, class>
 struct __to_address_helper {
   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR static decltype(std::__to_address(
-      std::declval<_Pointer&>().operator->()))
-  __call(_Pointer& __p) _NOEXCEPT {
+      std::declval<const _Pointer&>().operator->()))
+  __call(const _Pointer& __p) _NOEXCEPT {
     return std::__to_address(__p.operator->());
   }
 };
 
 template <class _Pointer>
 struct __to_address_helper<_Pointer,
-                           decltype((void)pointer_traits<_Pointer>::to_address(std::declval<_Pointer&>()))> {
+                           decltype((void)pointer_traits<_Pointer>::to_address(std::declval<const _Pointer&>()))> {
   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR static decltype(pointer_traits<_Pointer>::to_address(
-      std::declval<_Pointer&>()))
-  __call(_Pointer& __p) _NOEXCEPT {
+      std::declval<const _Pointer&>()))
+  __call(const _Pointer& __p) _NOEXCEPT {
     return pointer_traits<_Pointer>::to_address(__p);
   }
 };
