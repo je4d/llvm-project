@@ -196,7 +196,6 @@ template <class T> bool cpp03_overload_allocator<T>::construct_called = false;
 
 template <class T, class = std::integral_constant<std::size_t, 0> > class min_pointer;
 template <class T, class ID> class min_pointer<const T, ID>;
-template <class T, class ID> class min_pointer<propconst T, ID>;
 template <class ID> class min_pointer<void, ID>;
 template <class ID> class min_pointer<const void, ID>;
 template <class T> class min_allocator;
@@ -251,7 +250,6 @@ class min_pointer
 public:
     min_pointer() TEST_NOEXCEPT = default;
     TEST_CONSTEXPR_CXX14 min_pointer(std::nullptr_t) TEST_NOEXCEPT : ptr_(nullptr) {}
-    TEST_CONSTEXPR_CXX14 min_pointer(min_pointer<propconst T, ID> p) : ptr_(p.ptr_) {}
     TEST_CONSTEXPR_CXX14 explicit min_pointer(min_pointer<void, ID> p) TEST_NOEXCEPT : ptr_(static_cast<T*>(p.ptr_)) {}
 
     TEST_CONSTEXPR_CXX14 explicit operator bool() const {return ptr_ != nullptr;}
@@ -323,7 +321,6 @@ public:
     min_pointer() TEST_NOEXCEPT = default;
     TEST_CONSTEXPR_CXX14 min_pointer(std::nullptr_t) : ptr_(nullptr) {}
     TEST_CONSTEXPR_CXX14 min_pointer(min_pointer<T, ID> p) : ptr_(p.ptr_) {}
-    TEST_CONSTEXPR_CXX14 min_pointer(const min_pointer<propconst T, ID> p) : ptr_(p.ptr_) {}
     TEST_CONSTEXPR_CXX14 explicit min_pointer(min_pointer<const void, ID> p) : ptr_(static_cast<const T*>(p.ptr_)) {}
 
     TEST_CONSTEXPR_CXX14 explicit operator bool() const {return ptr_ != nullptr;}
@@ -387,89 +384,6 @@ public:
     friend TEST_CONSTEXPR_CXX14 bool operator!=(std::nullptr_t, min_pointer x) {return x.ptr_ != nullptr;}
     template <class U, class XID> friend class min_pointer;
 };
-
-#if TEST_STD_VER >= 26
-template <class T, class ID>
-class min_pointer<propconst T, ID>
-{
-    propconst T* ptr_;
-
-    TEST_CONSTEXPR_CXX14 explicit min_pointer(T* p) TEST_NOEXCEPT : ptr_(p) {}
-    TEST_CONSTEXPR_CXX14 explicit const min_pointer(const T* p) TEST_NOEXCEPT : ptr_(p) {}
-public:
-    min_pointer() TEST_NOEXCEPT = default;
-    TEST_CONSTEXPR_CXX14 min_pointer(std::nullptr_t) TEST_NOEXCEPT : ptr_(nullptr) {}
-    TEST_CONSTEXPR_CXX14 min_pointer(min_pointer<T, ID> p) TEST_NOEXCEPT : ptr_(p.ptr_) {}
-    TEST_CONSTEXPR_CXX14 const min_pointer(min_pointer<const T, ID> p) TEST_NOEXCEPT : ptr_(p.ptr_) {}
-    TEST_CONSTEXPR_CXX14 explicit min_pointer(min_pointer<void, ID> p) TEST_NOEXCEPT : ptr_(static_cast<T*>(p.ptr_)) {}
-    TEST_CONSTEXPR_CXX14 explicit const min_pointer(min_pointer<const void, ID> p) TEST_NOEXCEPT : ptr_(static_cast<const T*>(p.ptr_)) {}
-
-    TEST_CONSTEXPR_CXX14 explicit operator bool() const {return ptr_ != nullptr;}
-
-    typedef std::ptrdiff_t difference_type;
-    typedef T& reference;
-    typedef const T& const_reference;
-    typedef T* pointer;
-    typedef const T* const_pointer;
-    typedef T value_type;
-    typedef std::random_access_iterator_tag iterator_category;
-
-    TEST_CONSTEXPR_CXX14 reference operator*() {return *ptr_;}
-    TEST_CONSTEXPR_CXX14 const_reference operator*() const {return *ptr_;}
-    TEST_CONSTEXPR_CXX14 pointer operator->() {return ptr_;}
-    TEST_CONSTEXPR_CXX14 const_pointer operator->() const {return ptr_;}
-
-    TEST_CONSTEXPR_CXX14 min_pointer& operator++() {++ptr_; return *this;}
-    TEST_CONSTEXPR_CXX14 min_pointer operator++(int) {min_pointer tmp(*this); ++ptr_; return tmp;}
-
-    TEST_CONSTEXPR_CXX14 min_pointer& operator--() {--ptr_; return *this;}
-    TEST_CONSTEXPR_CXX14 min_pointer operator--(int) {min_pointer tmp(*this); --ptr_; return tmp;}
-
-    TEST_CONSTEXPR_CXX14 min_pointer& operator+=(difference_type n) {ptr_ += n; return *this;}
-    TEST_CONSTEXPR_CXX14 min_pointer& operator-=(difference_type n) {ptr_ -= n; return *this;}
-
-    TEST_CONSTEXPR_CXX14 min_pointer operator+(difference_type n)
-    {
-        min_pointer tmp(*this);
-        tmp += n;
-        return tmp;
-    }
-
-    friend TEST_CONSTEXPR_CXX14 min_pointer operator+(difference_type n, min_pointer x)
-    {
-        return x + n;
-    }
-
-    TEST_CONSTEXPR_CXX14 min_pointer operator-(difference_type n)
-    {
-        min_pointer tmp(*this);
-        tmp -= n;
-        return tmp;
-    }
-
-    friend TEST_CONSTEXPR_CXX14 difference_type operator-(const min_pointer x, const min_pointer y)
-    {
-        return x.ptr_ - y.ptr_;
-    }
-
-    TEST_CONSTEXPR_CXX14 reference operator[](difference_type n) const {return ptr_[n];}
-
-    friend TEST_CONSTEXPR_CXX14 bool operator< (min_pointer x, min_pointer y) {return x.ptr_ < y.ptr_;}
-    friend TEST_CONSTEXPR_CXX14 bool operator> (min_pointer x, min_pointer y) {return y < x;}
-    friend TEST_CONSTEXPR_CXX14 bool operator<=(min_pointer x, min_pointer y) {return !(y < x);}
-    friend TEST_CONSTEXPR_CXX14 bool operator>=(min_pointer x, min_pointer y) {return !(x < y);}
-
-    static TEST_CONSTEXPR_CXX14 min_pointer pointer_to(T& t) {return min_pointer(std::addressof(t));}
-
-    friend TEST_CONSTEXPR_CXX14 bool operator==(min_pointer x, min_pointer y) {return x.ptr_ == y.ptr_;}
-    friend TEST_CONSTEXPR_CXX14 bool operator!=(min_pointer x, min_pointer y) {return x.ptr_ != y.ptr_;}
-    friend TEST_CONSTEXPR_CXX14 bool operator==(min_pointer x, std::nullptr_t) {return x.ptr_ == nullptr;}
-    friend TEST_CONSTEXPR_CXX14 bool operator!=(min_pointer x, std::nullptr_t) {return x.ptr_ != nullptr;}
-    friend TEST_CONSTEXPR_CXX14 bool operator==(std::nullptr_t, min_pointer x) {return x.ptr_ == nullptr;}
-    friend TEST_CONSTEXPR_CXX14 bool operator!=(std::nullptr_t, min_pointer x) {return x.ptr_ != nullptr;}
-    template <class U, class XID> friend class min_pointer;
-};
-#endif
 
 template <class T>
 class min_allocator
