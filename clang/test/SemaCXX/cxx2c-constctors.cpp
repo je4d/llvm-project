@@ -56,3 +56,28 @@ namespace TestConstruction {
     static_assert(constCtorWasUsed<const Overloaded, const Overloaded>() == true);
   }
 }
+
+struct CTag {};
+struct NCTag{};
+
+struct A // #ACopyCtor #AMoveCtor
+{
+    A(NCTag) {}       // #ANCTagCtor
+    const A(CTag) {}
+};
+
+void f()
+{
+  A       a_nc_from_c {CTag{}}; // expected-error            {{no viable conversion from 'CTag' to 'A'}}
+                                // expected-note@#ACopyCtor  {{candidate constructor (the implicit copy constructor) not viable: no known conversion from 'CTag' to 'const A &' for 1st argument}}
+                                // expected-note@#AMoveCtor  {{candidate constructor (the implicit move constructor) not viable: no known conversion from 'CTag' to 'A &&' for 1st argument}}
+                                // expected-note@#ANCTagCtor {{candidate constructor not viable: no known conversion from 'CTag' to 'NCTag' for 1st argument}}
+                                // expected-note@#AMoveCtor  {{passing argument to parameter here}}
+  (void)  a_nc_from_c;
+  A const a_c_from_c  {CTag{}};
+  (void)  a_c_from_c;
+  A       a_nc_from_nc{NCTag{}};
+  (void)  a_nc_from_nc;
+  A const a_c_from_nc {NCTag{}};
+  (void)  a_c_from_nc;
+}
