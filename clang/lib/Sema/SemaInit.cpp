@@ -4816,6 +4816,9 @@ static OverloadingResult TryRefInitWithConversionFunction(
       if (!Info.Constructor)
         continue;
 
+      if (!cv1T1.getQualifiers().hasConst() && Info.Constructor->isConstConstructor())
+        continue;
+
       if (!Info.Constructor->isInvalidDecl() &&
           Info.Constructor->isConvertingConstructor(/*AllowExplicit*/true)) {
         if (Info.ConstructorTmpl)
