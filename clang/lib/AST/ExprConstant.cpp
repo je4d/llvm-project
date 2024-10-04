@@ -55,6 +55,7 @@
 #include "clang/Basic/TargetInfo.h"
 #include "llvm/ADT/APFixedPoint.h"
 #include "llvm/ADT/SmallBitVector.h"
+#include "llvm/ADT/Sequence.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/SaveAndRestore.h"
@@ -15906,6 +15907,135 @@ bool Expr::EvaluateAsConstantExpr(EvalResult &Result, const ASTContext &Ctx,
   return true;
 }
 
+struct HeapAllocInfo
+{
+  enum AllocReachability
+  {
+    Unreachable,
+    Reachable,
+    ReachableAsMutable,
+  };
+
+  AllocReachability Reachability = Unreachable;
+  QualType          Type{};
+  VarDecl*          Replacement = nullptr;
+};
+
+namespace {
+struct SubobjectInfo {
+  const APValue &Value;
+  QualType Type;
+  bool IsMutable = false;
+};
+} // namespace
+
+static void CheckAllocReachability(
+    std::map<DynamicAllocLValue, HeapAllocInfo, DynAllocOrder> &AllocInfos,
+    const ASTContext &Ctx, EvalInfo &Info, const APValue &Value, QualType Ty) {
+  auto VisitChildren = [&](auto Children, unsigned ExpectedChildren,
+                           auto SubobjectInfoFn) {
+    unsigned RangeSize = 0;
+    for (const auto &[Idx, C] : llvm::enumerate(Children)) {
+      ++RangeSize;
+      auto SI = SubobjectInfoFn(Idx, C);
+      CheckAllocReachability(AllocInfos, Ctx, Info, SI.Value,
+                             getSubobjectType(Ty, SI.Type, SI.IsMutable));
+    }
+    assert(RangeSize == ExpectedChildren && "Unexpected children range size");
+  };
+
+  switch (Value.getKind()) {
+  case APValue::None:
+  case APValue::Indeterminate:
+  case APValue::Int:
+  case APValue::Float:
+  case APValue::FixedPoint:
+  case APValue::ComplexInt:
+  case APValue::ComplexFloat:
+  case APValue::MemberPointer:
+  case APValue::AddrLabelDiff:
+    break;
+  case APValue::Vector: {
+    const VectorType *VT = Ty.getTypePtr()->castAs<VectorType>();
+    VisitChildren(llvm::seq(VT->getNumElements()), Value.getVectorLength(),
+                  [&](unsigned I, unsigned C) -> SubobjectInfo {
+                    return {Value.getVectorElt(I), VT->getElementType()};
+                  });
+    break;
+  }
+  case APValue::Array: {
+    VisitChildren(
+        llvm::seq(Value.getArrayInitializedElts()),
+        Value.getArrayInitializedElts(),
+        [&, AT = Ty.getTypePtr()->castAsArrayTypeUnsafe()](
+            unsigned I, unsigned C) -> SubobjectInfo {
+          return {Value.getArrayInitializedElt(I), AT->getElementType()};
+        });
+    break;
+  }
+  case APValue::Struct:
+    if (Ty->isStructureOrClassType()) {
+      const RecordType *RT = Ty->castAs<RecordType>();
+      assert(RT && "APValue::Struct's type is not a RecordType");
+      const RecordDecl *RD = RT->getDecl();
+      assert(RD &&
+             "APValue::Struct's type does not have a RecordDecl available");
+
+      if (const CXXRecordDecl *CXXRD = dyn_cast<CXXRecordDecl>(RD)) {
+        VisitChildren(
+            CXXRD->bases(), Value.getStructNumBases(),
+            [&](unsigned I, const CXXBaseSpecifier &Base) -> SubobjectInfo {
+              return {Value.getStructBase(I), Base.getType()};
+            });
+      }
+      VisitChildren(RD->fields(), Value.getStructNumFields(),
+                    [&](unsigned I, const FieldDecl *Field) -> SubobjectInfo {
+                      return {Value.getStructField(I), Field->getType(),
+                              Field->isMutable()};
+                    });
+    }
+    break;
+  case APValue::Union:
+    if (const FieldDecl *FD = Value.getUnionField())
+      CheckAllocReachability(
+          AllocInfos, Ctx, Info, Value.getUnionValue(),
+          getSubobjectType(Ty, FD->getType(), FD->isMutable()));
+    break;
+  case APValue::LValue: {
+    auto &LVB = Value.getLValueBase();
+    if (auto dynAllocLValue =
+            Value.getLValueBase().dyn_cast<DynamicAllocLValue>()) {
+      const auto optDynAlloc = Info.lookupDynamicAlloc(dynAllocLValue);
+      if (optDynAlloc && *optDynAlloc) {
+        const DynAlloc &dynAlloc = **optDynAlloc;
+        assert((Ty.getTypePtr()->isPointerType() ||
+                Ty.getTypePtr()->isReferenceType()) &&
+               "Found a dynamic alloc of non-pointer, non-reference type");
+        bool allocIsConst = Ctx.getConstPropagatedType(Ty)
+                                .getTypePtr()
+                                ->getPointeeType()
+                                .isConstQualified();
+        auto AllocTy = LVB.getDynamicAllocType();
+        if (allocIsConst)
+          AllocTy.addConst();
+        auto &AllocInfo = AllocInfos[dynAllocLValue];
+        const auto NewReachability = allocIsConst
+                                         ? HeapAllocInfo::Reachable
+                                         : HeapAllocInfo::ReachableAsMutable;
+
+        if (NewReachability > AllocInfo.Reachability) {
+          AllocInfo.Reachability = NewReachability;
+          AllocInfo.Type = AllocTy;
+          CheckAllocReachability(AllocInfos, Ctx, Info, dynAlloc.Value,
+                                 AllocTy);
+        }
+      }
+    }
+    break;
+  }
+  }
+}
+
 bool Expr::EvaluateAsInitializer(APValue &Value, const ASTContext &Ctx,
                                  const VarDecl *VD,
                                  SmallVectorImpl<PartialDiagnosticAt> &Notes,
@@ -15968,6 +16098,14 @@ bool Expr::EvaluateAsInitializer(APValue &Value, const ASTContext &Ctx,
 
     if (!Info.discardCleanups())
       llvm_unreachable("Unhandled cleanup; missing full expression marker?");
+  }
+
+  if (Ctx.getLangOpts().CPlusPlus26 && VD->isConstexpr()) {
+    // Non-transient constexpr allocations (P1974)
+    // -------------------------------------------
+    // 1. Find allocations that remain reachable after initializer evaluation
+    std::map<DynamicAllocLValue, HeapAllocInfo, DynAllocOrder> AllocInfos{};
+    CheckAllocReachability(AllocInfos, Ctx, Info, Value, VD->getType());
   }
 
   return CheckConstantExpression(Info, DeclLoc, DeclTy, Value,
