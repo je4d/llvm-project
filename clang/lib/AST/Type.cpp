@@ -3453,7 +3453,7 @@ QualType QualType::getNonPackExpansionType() const {
 
 QualType QualType::getNonLValueExprType(const ASTContext &Context) const {
   if (const auto *RefType = getTypePtr()->getAs<ReferenceType>())
-    return RefType->getPointeeType();
+    return Context.getConstPropagatedType(RefType->getPointeeType());
 
   // C++0x [basic.lval]:
   //   Class prvalues can have cv-qualified types; non-class prvalues always
@@ -3462,7 +3462,7 @@ QualType QualType::getNonLValueExprType(const ASTContext &Context) const {
   // See also C99 6.3.2.1p2.
   if (!Context.getLangOpts().CPlusPlus ||
       (!getTypePtr()->isDependentType() && !getTypePtr()->isRecordType()))
-    return getUnqualifiedType();
+    return Context.getConstPropagatedType(getUnqualifiedType());
 
   return *this;
 }
