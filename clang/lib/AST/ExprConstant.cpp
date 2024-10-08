@@ -15851,7 +15851,9 @@ static void MapLValues(APValue& Value, const Fn& MapLValue)
 }
 
 static bool EvaluateDestruction(const ASTContext &Ctx, APValue::LValueBase Base,
-                                APValue DestroyedValue, QualType Type,
+                                APValue DestroyedValue,
+                                const SmallVector<EvaluatedStmt::Alloc>* DestroyedValueAllocs,
+                                QualType Type,
                                 SourceLocation Loc, Expr::EvalStatus &EStatus,
                                 bool IsConstantDestruction) {
   EvalInfo Info(Ctx, EStatus,
@@ -15861,11 +15863,40 @@ static bool EvaluateDestruction(const ASTContext &Ctx, APValue::LValueBase Base,
                          EvalInfo::EvaluatingDeclKind::Dtor);
   Info.InConstantContext = IsConstantDestruction;
 
+  // P1974: the DsetroyedValue may be a copy of the value being destroyed,
+  // which includes LValues referring to constexpr allocations which were
+  // promoted to static storage. We need to make copies of these allocations
+  // too and update all relevant LValues in DestroyedValues + the allocation
+  // copies to refer to the copies.
+  if (DestroyedValueAllocs) {
+    llvm::DenseMap<const ValueDecl*, APValue::LValueBase> HeapAllocLVBs;
+    for (const EvaluatedStmt::Alloc& A : *DestroyedValueAllocs) {
+      LValue LV;
+      const EvaluatedStmt& ES = *A.Decl->getEvaluatedStmt();
+      APValue* V = Info.createHeapAlloc(dyn_cast<Expr>(ES.Value.get(nullptr)), A.Type, LV);
+      *V = ES.Evaluated;
+      HeapAllocLVBs[A.Decl] = LV.Base;
+    }
+    const auto MapLV = [&](APValue& V)->void {
+      if (const ValueDecl* VD = V.getLValueBase().dyn_cast<const ValueDecl*>())
+        if (auto HAIt = HeapAllocLVBs.find(VD); HAIt != HeapAllocLVBs.end())
+          V = V.hasLValuePath()
+            ? APValue(HAIt->second, V.getLValueOffset(), V.getLValuePath(), V.isLValueOnePastTheEnd(), V.isNullPointer())
+            : APValue(HAIt->second, V.getLValueOffset(), APValue::NoLValuePath{}, V.isNullPointer());
+    };
+    MapLValues(DestroyedValue, MapLV);
+    for (auto& [_, DA] : Info.HeapAllocs)
+      MapLValues(DA.Value, MapLV);
+  }
+
   LValue LVal;
   LVal.set(Base);
 
   if (!HandleDestruction(Info, Loc, Base, DestroyedValue, Type) ||
       EStatus.HasSideEffects)
+    return false;
+
+  if (!CheckMemoryLeaks(Info))
     return false;
 
   if (!Info.discardCleanups())
@@ -15934,7 +15965,7 @@ bool Expr::EvaluateAsConstantExpr(EvalResult &Result, const ASTContext &Ctx,
   // If this is a class template argument, it's required to have constant
   // destruction too.
   if (Kind == ConstantExprKind::ClassTemplateArgument &&
-      (!EvaluateDestruction(Ctx, Base, Result.Val, T, getBeginLoc(), Result,
+      (!EvaluateDestruction(Ctx, Base, Result.Val, nullptr, T, getBeginLoc(), Result,
                             true) ||
        Result.HasSideEffects)) {
     // FIXME: Prefix a note to indicate that the problem is lack of constant
@@ -16215,15 +16246,21 @@ bool VarDecl::evaluateDestruction(
   // Otherwise, treat the value as default-initialized; if the destructor works
   // anyway, then the destruction is constant (and must be essentially empty).
   APValue DestroyedValue;
-  if (getEvaluatedValue() && !getEvaluatedValue()->isAbsent())
+  const SmallVector<EvaluatedStmt::Alloc>* DestroyedValueAllocs = nullptr;
+  if (getEvaluatedValue() && !getEvaluatedValue()->isAbsent()) {
     DestroyedValue = *getEvaluatedValue();
-  else if (!handleDefaultInitValue(getType(), DestroyedValue))
+    DestroyedValueAllocs = &getEvaluatedStmt()->Allocs;
+  } else if (!handleDefaultInitValue(getType(), DestroyedValue))
     return false;
 
   if (!EvaluateDestruction(getASTContext(), this, std::move(DestroyedValue),
+                           DestroyedValueAllocs,
                            getType(), getLocation(), EStatus,
                            IsConstantDestruction) ||
       EStatus.HasSideEffects)
+    return false;
+
+  if (!Notes.empty())
     return false;
 
   ensureEvaluatedStmt()->HasConstantDestruction = true;
