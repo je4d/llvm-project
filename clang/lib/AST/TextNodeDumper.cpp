@@ -608,7 +608,8 @@ void TextNodeDumper::Visit(const APValue &Value, QualType Ty) {
     return;
   case APValue::LValue:
   {
-    // APValue val;
+    OS << "LValue <todo>";
+    /*
     auto & base = Value.getLValueBase();
     if (base.isNull()) {
       OS << "LValue is null";
@@ -628,6 +629,7 @@ void TextNodeDumper::Visit(const APValue &Value, QualType Ty) {
     } else {
       OS << "LValue is `<<something else>>`\n";
     }
+    */
     return;
   }
   case APValue::Array: {
