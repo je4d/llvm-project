@@ -15972,7 +15972,7 @@ bool Expr::EvaluateAsInitializer(APValue &Value, const ASTContext &Ctx,
 
   return CheckConstantExpression(Info, DeclLoc, DeclTy, Value,
                                  ConstantExprKind::Normal) &&
-         CheckMemoryLeaks(Info);
+         (/*Ctx.getLangOpts().CPlusPlus26*/false || CheckMemoryLeaks(Info));
 }
 
 bool VarDecl::evaluateDestruction(
