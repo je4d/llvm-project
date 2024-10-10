@@ -607,9 +607,29 @@ void TextNodeDumper::Visit(const APValue &Value, QualType Ty) {
     }
     return;
   case APValue::LValue:
-    (void)Context;
-    OS << "LValue <todo>";
+  {
+    // APValue val;
+    auto & base = Value.getLValueBase();
+    if (base.isNull()) {
+      OS << "LValue is null";
+    } else if (auto * valdecl = base.template dyn_cast<const ValueDecl *>()) {
+      OS << "LValue is `const ValueDecl *`:\n";
+      valdecl->dump();
+    } else if (auto * expr = base.template dyn_cast<const Expr *>()) {
+      OS << "LValue is `const Expr *`:\n";
+      expr->dump();
+    } else if (auto typeinfo = base.template dyn_cast<TypeInfoLValue>()) {
+      OS << "LValue is `TypeInfoLValue`:\n";
+      typeinfo.getType()->dump();
+    } else if (auto dynamicalloc = base.template dyn_cast<DynamicAllocLValue>()) {
+      OS << "LValue is `DynamicAllocLValue`: #";
+      OS << dynamicalloc.getIndex();
+      OS << "\n";
+    } else {
+      OS << "LValue is `<<something else>>`\n";
+    }
     return;
+  }
   case APValue::Array: {
     unsigned ArraySize = Value.getArraySize();
     unsigned NumInitializedElements = Value.getArrayInitializedElts();
