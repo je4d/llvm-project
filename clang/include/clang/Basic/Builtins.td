@@ -4702,3 +4702,9 @@ def ArithmeticFence : LangBuiltin<"ALL_LANGUAGES"> {
   let Attributes = [CustomTypeChecking, Constexpr];
   let Prototype = "void(...)";
 }
+
+def ConstexprPrint: Builtin {
+  let Spellings = ["__constexpr_print"];
+  let Attributes = [NoThrow, Constexpr];
+  let Prototype = "void(char const*)";
+}

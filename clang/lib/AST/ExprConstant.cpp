@@ -63,6 +63,7 @@
 #include <cstring>
 #include <functional>
 #include <optional>
+#include <iostream>
 
 #define DEBUG_TYPE "exprconstant"
 
@@ -15383,6 +15384,15 @@ public:
 
     case Builtin::BI__builtin_operator_delete:
       return HandleOperatorDeleteCall(Info, E);
+
+    case Builtin::BI__constexpr_print:
+    {
+      auto result = ConvertPointerToString(E->getArg(0), Info);
+      if (result) {
+        std::cout << "constexpr print: \033[1;97m'" << *result << "'\033[0m\n";
+      }
+      return result.has_value();
+    }
 
     default:
       return false;
