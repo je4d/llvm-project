@@ -731,7 +731,7 @@ public:
   /// initializer of the given declaration. Returns true if the initializer
   /// can be folded to a constant, and produces any relevant notes. In C++11,
   /// notes will be produced if the expression is not a constant expression.
-  bool EvaluateAsInitializer(APValue &Result, const ASTContext &Ctx,
+  bool EvaluateAsInitializer(EvaluatedStmt& Eval, ASTContext &Ctx,
                              const VarDecl *VD,
                              SmallVectorImpl<PartialDiagnosticAt> &Notes,
                              bool IsConstantInitializer) const;

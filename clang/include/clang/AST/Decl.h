@@ -907,6 +907,14 @@ struct EvaluatedStmt {
 
   LazyDeclStmtPtr Value;
   APValue Evaluated;
+  struct Alloc {
+    VarDecl* Decl = nullptr;
+    // TODO: we don't really need a full QualType here, it's the same as the
+    // Decl's type except that the Decl's type may have added constness. We
+    // could could pack a "has added constness" bit into the VarDecl*.
+    QualType Type{};
+  };
+  SmallVector<Alloc> Allocs;
 
   EvaluatedStmt()
       : WasEvaluated(false), IsEvaluating(false),

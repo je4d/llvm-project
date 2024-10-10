@@ -2574,7 +2574,7 @@ APValue *VarDecl::evaluateValueImpl(SmallVectorImpl<PartialDiagnosticAt> &Notes,
   Eval->IsEvaluating = true;
 
   ASTContext &Ctx = getASTContext();
-  bool Result = Init->EvaluateAsInitializer(Eval->Evaluated, Ctx, this, Notes,
+  bool Result = Init->EvaluateAsInitializer(*Eval, Ctx, this, Notes,
                                             IsConstantInitialization);
 
   // In C++, or in C23 if we're initialising a 'constexpr' variable, this isn't
