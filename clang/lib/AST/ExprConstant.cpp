@@ -21442,6 +21442,44 @@ bool Expr::EvaluateAsLValue(EvalResult &Result, const ASTContext &Ctx,
   return true;
 }
 
+template <typename Fn>
+static void MapLValues(APValue& Value, const Fn& MapLValue)
+{
+  auto VisitChildren = [&](unsigned NumChildren, auto IdxToValueFun) {
+    for (const auto Idx : llvm::seq(NumChildren))
+      MapLValues(IdxToValueFun(Idx), MapLValue);
+  };
+
+  switch(Value.getKind()) {
+  case APValue::None:
+  case APValue::Indeterminate:
+  case APValue::Int:
+  case APValue::Float:
+  case APValue::FixedPoint:
+  case APValue::ComplexInt:
+  case APValue::ComplexFloat:
+  case APValue::MemberPointer:
+  case APValue::AddrLabelDiff:
+    break;
+  case APValue::Vector:
+    VisitChildren(Value.getVectorLength(), [&](unsigned I) -> decltype(auto) { return Value.getVectorElt(I); });
+    break;
+  case APValue::Array:
+    VisitChildren(Value.getArrayInitializedElts(), [&](unsigned I) -> decltype(auto) { return Value.getArrayInitializedElt(I); });
+    break;
+  case APValue::Struct:
+    VisitChildren(Value.getStructNumBases(), [&](unsigned I) -> decltype(auto) { return Value.getStructBase(I); });
+    VisitChildren(Value.getStructNumFields(), [&](unsigned I) -> decltype(auto) { return Value.getStructField(I); });
+    break;
+  case APValue::Union:
+    MapLValues(Value.getUnionValue(), MapLValue);
+    break;
+  case APValue::LValue:
+    MapLValue(Value);
+    break;
+  }
+}
+
 static bool EvaluateDestruction(const ASTContext &Ctx, APValue::LValueBase Base,
                                 APValue DestroyedValue, QualType Type,
                                 SourceLocation Loc, Expr::EvalStatus &EStatus,
@@ -21543,6 +21581,7 @@ struct HeapAllocInfo
   };
 
   AllocReachability Reachability = Unreachable;
+  QualType          OrigType{};
   QualType          Type{};
   VarDecl*          Replacement = nullptr;
 };
@@ -21651,6 +21690,7 @@ static void CheckAllocReachability(
 
         if (NewReachability > AllocInfo.Reachability) {
           AllocInfo.Reachability = NewReachability;
+          AllocInfo.OrigType = LVB.getDynamicAllocType();
           AllocInfo.Type = AllocTy;
           CheckAllocReachability(AllocInfos, Ctx, Info, dynAlloc.Value,
                                  AllocTy);
@@ -21662,7 +21702,7 @@ static void CheckAllocReachability(
   }
 }
 
-bool Expr::EvaluateAsInitializer(APValue &Value, const ASTContext &Ctx,
+bool Expr::EvaluateAsInitializer(EvaluatedStmt& Eval, ASTContext &Ctx,
                                  const VarDecl *VD,
                                  SmallVectorImpl<PartialDiagnosticAt> &Notes,
                                  bool IsConstantInitialization) const {
@@ -21685,7 +21725,7 @@ bool Expr::EvaluateAsInitializer(APValue &Value, const ASTContext &Ctx,
                  (Ctx.getLangOpts().CPlusPlus || Ctx.getLangOpts().C23))
                     ? EvaluationMode::ConstantExpression
                     : EvaluationMode::ConstantFold);
-  Info.setEvaluatingDecl(VD, Value);
+  Info.setEvaluatingDecl(VD, Eval.Evaluated);
   Info.InConstantContext = IsConstantInitialization;
 
   SourceLocation DeclLoc = VD->getLocation();
@@ -21693,10 +21733,10 @@ bool Expr::EvaluateAsInitializer(APValue &Value, const ASTContext &Ctx,
 
   if (Info.EnableNewConstInterp) {
     auto &InterpCtx = Ctx.getInterpContext();
-    if (!InterpCtx.evaluateAsInitializer(Info, VD, this, Value))
+    if (!InterpCtx.evaluateAsInitializer(Info, VD, this, Eval.Evaluated))
       return false;
 
-    return CheckConstantExpression(Info, DeclLoc, DeclTy, Value,
+    return CheckConstantExpression(Info, DeclLoc, DeclTy, Eval.Evaluated,
                                    ConstantExprKind::Normal);
   } else {
     LValue LVal;
@@ -21713,7 +21753,7 @@ bool Expr::EvaluateAsInitializer(APValue &Value, const ASTContext &Ctx,
       // serialization code calls ParmVarDecl::getDefaultArg() which strips the
       // outermost FullExpr, such as ExprWithCleanups.
       FullExpressionRAII Scope(Info);
-      if (!EvaluateInPlace(Value, Info, LVal, this,
+      if (!EvaluateInPlace(Eval.Evaluated, Info, LVal, this,
                            /*AllowNonLiteralTypes=*/true) ||
           EStatus.HasSideEffects)
         return false;
@@ -21731,13 +21771,62 @@ bool Expr::EvaluateAsInitializer(APValue &Value, const ASTContext &Ctx,
     // Non-transient constexpr allocations (P1974)
     // -------------------------------------------
     // 1. Find allocations that remain reachable after initializer evaluation
+    // 2. Convert non-transient allocations to static variable declarations
+    // 3. Update pointers/references in the result value and its associated
+    //    allocations to point to the static variable declarations
+    // 4. Set the variable declaration initializers to the updated allocation
+    //    APValues
     std::map<DynamicAllocLValue, HeapAllocInfo, DynAllocOrder> AllocInfos{};
-    CheckAllocReachability(AllocInfos, Ctx, Info, Value, VD->getType());
+    CheckAllocReachability(AllocInfos, Ctx, Info, Eval.Evaluated, VD->getType());
+
+    unsigned allocId = 0;
+    for (auto& [DALV, AI] : AllocInfos) {
+      std::string Name;
+      {
+        llvm::raw_string_ostream NameOut(Name);
+        NameOut << "__constexpr_alloc_" << (allocId++) << "_" << VD->getName();;
+      }
+      AI.Replacement = VarDecl::Create(Ctx, Ctx.getTranslationUnitDecl(), {}, {}, &Ctx.Idents.get(Name), AI.Type, nullptr, VD->getStorageClass());
+      if (AI.Reachability == HeapAllocInfo::Reachable)
+        AI.Replacement->setConstexpr(true);
+      Eval.Allocs.push_back({AI.Replacement, AI.OrigType});
+    }
+    const auto MapLV = [&](APValue& V) {
+      const APValue::LValueBase& OldLVB = V.getLValueBase();
+      if (auto DALV = OldLVB.dyn_cast<DynamicAllocLValue>()) {
+        auto AIIt = AllocInfos.find(DALV);
+        assert(AIIt != end(AllocInfos) && "Found a DynamicAllocLValue that is not in AllocInfos");
+        APValue::LValueBase LVB{AIIt->second.Replacement};
+        V = V.hasLValuePath()
+          ? APValue(std::move(LVB), V.getLValueOffset(), V.getLValuePath(), V.isLValueOnePastTheEnd(), V.isNullPointer())
+          : APValue(std::move(LVB), V.getLValueOffset(), APValue::NoLValuePath{}, V.isNullPointer());
+      }
+    };
+    MapLValues(Eval.Evaluated, MapLV);
+    for (auto& [_, DA] : Info.HeapAllocs)
+      MapLValues(DA.Value, MapLV);
+    for (const auto& [DALV, AI] : AllocInfos) {
+      auto It = Info.HeapAllocs.find(DALV);
+      DynAlloc& DA = It->second;
+
+      EvaluatedStmt& ES = *AI.Replacement->ensureEvaluatedStmt();
+      ES.WasEvaluated = true;
+      ES.IsEvaluating = false;
+      ES.HasConstantInitialization = true;
+      ES.HasConstantDestruction = true; // TODO: should this be set after the dtor check?
+      ES.Value = LazyDeclStmtPtr{const_cast<Expr*>(DA.AllocExpr)};
+      ES.Evaluated = std::move(DA.Value);
+      Info.HeapAllocs.erase(It);
+    }
   }
 
-  return CheckConstantExpression(Info, DeclLoc, DeclTy, Value,
-                                 ConstantExprKind::Normal) &&
-         CheckMemoryLeaks(Info);
+  if (!CheckConstantExpression(Info, DeclLoc, DeclTy, Eval.Evaluated, ConstantExprKind::Normal))
+    return false;
+
+  if (!CheckMemoryLeaks(Info))
+    return false;
+
+  return true;
 }
 
 bool VarDecl::evaluateDestruction(

@@ -7882,7 +7882,9 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
       for (auto *B : DD->flat_bindings())
         if (auto *HD = B->getHoldingVar())
           EmitGlobal(HD);
-
+    if (EvaluatedStmt* ES = cast<VarDecl>(D)->getEvaluatedStmt())
+      for (const EvaluatedStmt::Alloc& A : ES->Allocs)
+        EmitGlobal(A.Decl);
     break;
 
   // Indirect fields from global anonymous structs and unions can be
